@@ -9,7 +9,12 @@
 
 import { emitAgentEvent } from "../infra/agent-events.js";
 import { defaultRuntime } from "../runtime.js";
-import { classifyTask, logRoutingDecision, type ClassificationResult } from "./task-classifier.js";
+import {
+  classifyTask,
+  dynamicConfidenceThreshold,
+  logRoutingDecision,
+  type ClassificationResult,
+} from "./task-classifier.js";
 
 // ── Input routing ──────────────────────────────────────────────────────
 
@@ -59,7 +64,7 @@ export function applyMultiBrainRouting(input: RoutingInput): RoutingResult {
     },
   });
 
-  if (classification.confidence >= 70) {
+  if (classification.confidence >= dynamicConfidenceThreshold) {
     return {
       applied: true,
       provider: classification.provider,

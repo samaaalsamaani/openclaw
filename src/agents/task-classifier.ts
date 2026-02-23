@@ -50,6 +50,10 @@ type DomainRule = {
   patterns: RegExp[];
   /** Base confidence when matched (adjusted by specificity) */
   baseConfidence: number;
+  /** Multiplier per keyword hit (default 3, tunable via routing-weights.json) */
+  keywordBoost: number;
+  /** Multiplier per pattern hit (default 5, tunable via routing-weights.json) */
+  patternBoost: number;
 };
 
 const DOMAIN_RULES: DomainRule[] = [
@@ -143,6 +147,8 @@ const DOMAIN_RULES: DomainRule[] = [
       /\b(eslint|prettier|vitest|jest|pytest|cargo test)\b/i,
     ],
     baseConfidence: 80,
+    keywordBoost: 3,
+    patternBoost: 5,
   },
   {
     domain: "creative",
@@ -217,6 +223,8 @@ const DOMAIN_RULES: DomainRule[] = [
       /\b(social\s+media|instagram|tiktok|youtube)\s+(post|reel|carousel|shorts?)/i,
     ],
     baseConfidence: 75,
+    keywordBoost: 3,
+    patternBoost: 5,
   },
   {
     domain: "analysis",
@@ -276,6 +284,8 @@ const DOMAIN_RULES: DomainRule[] = [
       /\b(how|why)\s+(does|do|is|are|should|would)\b/i,
     ],
     baseConfidence: 70,
+    keywordBoost: 3,
+    patternBoost: 5,
   },
   {
     domain: "schedule",
@@ -326,6 +336,8 @@ const DOMAIN_RULES: DomainRule[] = [
       /\b(at|from|until)\s+\d{1,2}(:\d{2})?\s*(am|pm)?\b/i,
     ],
     baseConfidence: 70,
+    keywordBoost: 3,
+    patternBoost: 5,
   },
   {
     domain: "system",
@@ -376,6 +388,8 @@ const DOMAIN_RULES: DomainRule[] = [
       /\b(launchctl|systemctl|brew|apt|yum)\s+/i,
     ],
     baseConfidence: 65,
+    keywordBoost: 3,
+    patternBoost: 5,
   },
   {
     domain: "search",
@@ -429,6 +443,8 @@ const DOMAIN_RULES: DomainRule[] = [
       /\b(what happened|what.s new|any news)\b/i,
     ],
     baseConfidence: 75,
+    keywordBoost: 3,
+    patternBoost: 5,
   },
 ];
 
@@ -542,7 +558,7 @@ const CONFIDENCE_THRESHOLD = 70;
 
 // ── Dynamic routing weights (loaded from optimize.js output) ────────
 
-let dynamicConfidenceThreshold = CONFIDENCE_THRESHOLD;
+export let dynamicConfidenceThreshold = CONFIDENCE_THRESHOLD;
 
 function applyRoutingWeights(): void {
   try {
@@ -556,6 +572,12 @@ function applyRoutingWeights(): void {
       const w = domains[rule.domain];
       if (w && typeof w.baseConfidence === "number") {
         rule.baseConfidence = w.baseConfidence;
+      }
+      if (w && typeof w.keywordBoost === "number") {
+        rule.keywordBoost = w.keywordBoost;
+      }
+      if (w && typeof w.patternBoost === "number") {
+        rule.patternBoost = w.patternBoost;
       }
     }
     if (typeof raw.confidenceThreshold === "number") {
@@ -653,8 +675,8 @@ export function classifyTask(input: ClassifyTaskInput): ClassificationResult {
     if (keywordHits > 0 || patternHits > 0) {
       // Score = base confidence + bonuses for multiple matches
       score = rule.baseConfidence;
-      score += Math.min(keywordHits * 3, 15); // up to +15 for keyword density
-      score += Math.min(patternHits * 5, 15); // up to +15 for pattern matches
+      score += Math.min(keywordHits * rule.keywordBoost, 15); // up to +15 for keyword density
+      score += Math.min(patternHits * rule.patternBoost, 15); // up to +15 for pattern matches
       score = Math.min(score, 100);
 
       scores.push({ domain: rule.domain, score, matchedOn });
