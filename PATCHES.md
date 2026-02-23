@@ -35,11 +35,11 @@ All other custom code is new files that import from upstream — zero modificati
 
 ## Upgrade Checklist
 
-1. `git fetch upstream && git log --oneline main..upstream/main | head -30`
-2. Check for changes to: `get-reply.ts`, `manager-sync-ops.ts`, `qmd-manager.ts`, `plugin-auto-enable.ts`
-3. If changed: re-read the function signatures and re-apply hooks
+1. **Run pre-sync check**: `scripts/pre-sync-check.sh` (or `--merge` to preview)
+2. If any patched file shows WARNING: read the upstream diff, plan re-apply
+3. `git merge upstream/main`
 4. `pnpm install && pnpm build` — must succeed
 5. Run `vitest run src/agents/sdk-runner/` — must pass
-6. Gateway health check must return 200
+6. `launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway` — restart + verify health
 
-Last synced: upstream v2026.2.22 (commit 80f430c2b)
+Last synced: upstream v2026.2.22-1 (commit 457835b10, merged 8271b5f7e)
