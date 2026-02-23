@@ -629,8 +629,38 @@ export function classifyTask(input: ClassifyTaskInput): ClassificationResult {
     }
   }
 
-  // 3. Vision shortcut — images always go to Gemini Flash
+  // 3. Vision shortcut — images go to Gemini, UNLESS the message is clearly code-related
   if (hasImages) {
+    // Check if the text is strongly code-oriented (e.g. code screenshot with "fix this bug")
+    const lowerMsg = message.toLowerCase();
+    const codeSignals = [
+      "fix",
+      "bug",
+      "error",
+      "debug",
+      "refactor",
+      "code",
+      "function",
+      "compile",
+      "lint",
+      "test",
+      "typescript",
+      "javascript",
+      "python",
+    ];
+    const codeHits = codeSignals.filter((k) => lowerMsg.includes(k)).length;
+    if (codeHits >= 2) {
+      // Strong code signal with image — route to code brain (likely a code screenshot)
+      const route = ROUTING_TABLE.code;
+      return {
+        domain: "code",
+        provider: route.provider,
+        model: route.model,
+        confidence: 90,
+        reason: `Code screenshot detected (${codeHits} code keywords + image) → Codex`,
+        overrideSource: "image",
+      };
+    }
     const route = ROUTING_TABLE.vision;
     return {
       domain: "vision",

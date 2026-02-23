@@ -52,24 +52,34 @@ const VERIFIER_TABLE: Record<TaskDomain, { provider: string; model: string }> = 
 // ── Gate: only verify high-impact domains with high confidence ──────
 
 export function shouldVerify(domain: TaskDomain, confidence: number): boolean {
-  return confidence >= 85 && (domain === "code" || domain === "creative");
+  // High-impact domains: code bugs, creative tone, analysis accuracy, search freshness
+  const verifiableDomains: TaskDomain[] = ["code", "creative", "analysis", "search"];
+  return confidence >= 80 && verifiableDomains.includes(domain);
 }
 
 // ── Prompt builder ──────────────────────────────────────────────────
 
 export function buildVerificationPrompt(req: VerificationRequest): string {
+  const DOMAIN_GUIDANCE: Record<string, string> = {
+    code: "Check for: bugs, security issues, logic errors, missing edge cases, incorrect assumptions.",
+    creative:
+      "Check for: tone consistency with brand voice, unclear claims, missing attribution, logical gaps.",
+    analysis:
+      "Check for: factual accuracy, unsupported claims, logical fallacies, missing nuance, outdated information.",
+    search:
+      "Check for: stale or outdated information, broken assumptions about current state, missing caveats about data freshness.",
+  };
   const domainGuidance =
-    req.domain === "code"
-      ? "Check for: bugs, security issues, logic errors, missing edge cases, incorrect assumptions."
-      : "Check for: factual accuracy, tone consistency, unclear claims, missing attribution, logical gaps.";
+    DOMAIN_GUIDANCE[req.domain] ??
+    "Check for: factual accuracy, tone consistency, unclear claims, missing attribution, logical gaps.";
 
   const promptPreview =
-    req.originalPrompt.length > 500
-      ? req.originalPrompt.substring(0, 500) + "\n... (truncated)"
+    req.originalPrompt.length > 1000
+      ? req.originalPrompt.substring(0, 1000) + "\n... (truncated)"
       : req.originalPrompt;
   const responsePreview =
-    req.responseText.length > 2000
-      ? req.responseText.substring(0, 2000) + "\n... (truncated)"
+    req.responseText.length > 4000
+      ? req.responseText.substring(0, 4000) + "\n... (truncated)"
       : req.responseText;
 
   return [
