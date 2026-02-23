@@ -11,13 +11,14 @@ Review before each upstream sync.
 - `src/agents/sdk-runner/blocked-patterns.ts` — Execution policy
 - `src/agents/sdk-runner/mcp-servers.ts` — SDK MCP server builder
 - `src/agents/sdk-runner/sdk-runner.test.ts` — Test coverage (11 tests)
+- `src/agents/routing-middleware.ts` — Extracted routing + verification hooks (called from get-reply.ts)
 - `.planning/` — PAIOS phase tracking
 
 ## Modified Files (must re-apply after upgrade)
 
 | File                                     | What Changed                                                                                                         | Lines |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----- |
-| `src/auto-reply/reply/get-reply.ts`      | Import task-classifier + emitAgentEvent; routing block after session state; verification block before return         | ~67   |
+| `src/auto-reply/reply/get-reply.ts`      | Import routing-middleware; `applyMultiBrainRouting()` call + `scheduleVerification()` call                           | ~17   |
 | `src/memory/manager-sync-ops.ts`         | `PRAGMA busy_timeout = 5000` in openDatabaseAtPath()                                                                 | 2     |
 | `src/memory/qmd-manager.ts`              | `PRAGMA busy_timeout = 5000` in ensureDb() (upstream has 1ms)                                                        | 1     |
 | `package.json`                           | Added `@anthropic-ai/claude-agent-sdk` dependency                                                                    | 1     |
@@ -26,12 +27,13 @@ Review before each upstream sync.
 
 ## Integration Architecture
 
-Our routing connects to upstream through ONE file (`get-reply.ts`) at two points:
+Our routing connects to upstream through ONE file (`get-reply.ts`) via a thin middleware layer:
 
-1. **Input routing** (after session state init, before model override resolution): Classifies task domain, overrides provider/model if confidence >= 70%
-2. **Output verification** (after reply generation, before return): Fire-and-forget quality check via dynamic import
+1. **Input routing**: `applyMultiBrainRouting()` — classifies task domain, returns provider/model if confidence >= 70%
+2. **Output verification**: `scheduleVerification()` — fire-and-forget quality check via dynamic import
 
-All other custom code is new files that import from upstream — zero modification required.
+All routing logic lives in `src/agents/routing-middleware.ts` (new file, zero conflict risk).
+The `get-reply.ts` patch is just 1 import + 2 function calls (~17 lines vs previous ~67).
 
 ## Upgrade Checklist
 
