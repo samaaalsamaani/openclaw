@@ -5,10 +5,12 @@ import {
   resolveAgentSkillsFilter,
 } from "../../agents/agent-scope.js";
 import { resolveModelRefFromString } from "../../agents/model-selection.js";
+import { classifyTask, logRoutingDecision } from "../../agents/task-classifier.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
 import { resolveChannelModelOverride } from "../../channels/model-overrides.js";
 import { type OpenClawConfig, loadConfig } from "../../config/config.js";
+import { emitAgentEvent } from "../../infra/agent-events.js";
 import { applyLinkUnderstanding } from "../../link-understanding/apply.js";
 import { applyMediaUnderstanding } from "../../media-understanding/apply.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -164,6 +166,37 @@ export async function getReplyFromConfig(
     triggerBodyNormalized,
     bodyStripped,
   } = sessionState;
+
+  // ── Multi-brain routing: classify the task and pick optimal provider ──
+  if (!opts?.isHeartbeat && !hasResolvedHeartbeatModelOverride && bodyStripped?.trim()) {
+    const hasImages = Boolean(finalized.MediaPath);
+    const classificationResult = classifyTask({ message: bodyStripped, hasImages });
+    logRoutingDecision(bodyStripped, classificationResult);
+
+    if (classificationResult.confidence >= 70) {
+      provider = classificationResult.provider;
+      model = classificationResult.model;
+    }
+
+    // Fire observability event (fire-and-forget)
+    emitAgentEvent({
+      runId: sessionId,
+      stream: "routing",
+      data: {
+        domain: classificationResult.domain,
+        provider: classificationResult.provider,
+        model: classificationResult.model,
+        confidence: classificationResult.confidence,
+        reason: classificationResult.reason,
+        ...(classificationResult.isCompound
+          ? {
+              isCompound: true,
+              secondaryDomains: classificationResult.secondaryDomains,
+            }
+          : {}),
+      },
+    });
+  }
 
   await applyResetModelOverride({
     cfg,
@@ -324,7 +357,7 @@ export async function getReplyFromConfig(
     workspaceDir,
   });
 
-  return runPreparedReply({
+  const reply = await runPreparedReply({
     ctx,
     sessionCtx,
     cfg,
@@ -369,4 +402,36 @@ export async function getReplyFromConfig(
     workspaceDir,
     abortedLastRun,
   });
+
+  // Fire-and-forget verification (dynamic import to avoid circular chunk dep)
+  if (!opts?.isHeartbeat && bodyStripped?.trim()) {
+    const hasImages = Boolean(finalized.MediaPath);
+    const classResult = classifyTask({ message: bodyStripped, hasImages });
+    import("../../agents/verification.js")
+      .then(({ shouldVerify, executeVerification }) => {
+        if (!shouldVerify(classResult.domain, classResult.confidence)) {
+          return;
+        }
+        const replyText = Array.isArray(reply)
+          ? reply.map((r) => r.text ?? "").join("\n")
+          : (reply?.text ?? "");
+        if (!replyText) {
+          return;
+        }
+        return executeVerification({
+          domain: classResult.domain,
+          originalProvider: provider,
+          originalModel: model,
+          responseText: replyText,
+          originalPrompt: bodyStripped ?? "",
+          runId: sessionId ?? "",
+          workspaceDir,
+        });
+      })
+      .catch((err) => {
+        defaultRuntime.log?.("warn", `verification fire-and-forget failed: ${err}`);
+      });
+  }
+
+  return reply;
 }

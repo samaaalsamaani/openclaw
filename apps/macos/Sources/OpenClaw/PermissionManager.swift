@@ -52,6 +52,9 @@ enum PermissionManager {
     }
 
     private static func ensureNotifications(interactive: Bool) async -> Bool {
+        guard Bundle.main.bundleIdentifier != nil, Bundle.main.bundleIdentifier?.isEmpty == false else {
+            return false
+        }
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
 
@@ -190,10 +193,14 @@ enum PermissionManager {
         for cap in caps {
             switch cap {
             case .notifications:
-                let center = UNUserNotificationCenter.current()
-                let settings = await center.notificationSettings()
-                results[cap] = settings.authorizationStatus == .authorized
-                    || settings.authorizationStatus == .provisional
+                if Bundle.main.bundleIdentifier == nil || Bundle.main.bundleIdentifier?.isEmpty == true {
+                    results[cap] = false
+                } else {
+                    let center = UNUserNotificationCenter.current()
+                    let settings = await center.notificationSettings()
+                    results[cap] = settings.authorizationStatus == .authorized
+                        || settings.authorizationStatus == .provisional
+                }
 
             case .appleScript:
                 results[cap] = await MainActor.run { AppleScriptPermission.isAuthorized() }
