@@ -22,6 +22,7 @@ import type { ThinkLevel } from "../auto-reply/thinking.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveSessionAgentIds } from "./agent-scope.js";
+import { enforceAutonomy } from "./autonomy-enforcer.js";
 import { makeBootstrapWarn, resolveBootstrapContextForRun } from "./bootstrap-files.js";
 import { buildSystemPrompt } from "./cli-runner/helpers.js";
 import { resolveOpenClawDocsPath } from "./docs-path.js";
@@ -162,6 +163,18 @@ export async function runSdkAgent(params: SdkRunnerParams): Promise<EmbeddedPiRu
             message: `Command blocked by security policy (matches: ${pattern})`,
           };
         }
+      }
+
+      // Autonomy enforcer — DB-driven trust layer (after blocked patterns)
+      const autonomy = enforceAutonomy(command);
+      if (autonomy.action === "deny") {
+        log.warn(
+          `sdk canUseTool: autonomy denied (level=${autonomy.level}, pattern=${autonomy.pattern}): ${command.substring(0, 100)}`,
+        );
+        return {
+          behavior: "deny" as const,
+          message: `Command blocked by autonomy policy (pattern: ${autonomy.matchedRule ?? autonomy.pattern})`,
+        };
       }
     }
     return { behavior: "allow" as const, updatedInput: input };
