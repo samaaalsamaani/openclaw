@@ -5,7 +5,11 @@ import {
   resolveAgentSkillsFilter,
 } from "../../agents/agent-scope.js";
 import { resolveModelRefFromString } from "../../agents/model-selection.js";
-import { applyMultiBrainRouting, scheduleVerification } from "../../agents/routing-middleware.js";
+import {
+  applyMultiBrainRouting,
+  scheduleDecomposition,
+  scheduleVerification,
+} from "../../agents/routing-middleware.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
 import { resolveChannelModelOverride } from "../../channels/model-overrides.js";
@@ -386,6 +390,18 @@ export async function getReplyFromConfig(
 
   // Fire-and-forget verification (PAIOS)
   scheduleVerification({
+    bodyStripped,
+    isHeartbeat: Boolean(opts?.isHeartbeat),
+    hasImages: Boolean(finalized.MediaPath),
+    provider,
+    model,
+    sessionId,
+    workspaceDir,
+    reply,
+  });
+
+  // Fire-and-forget cross-brain decomposition (PAIOS)
+  scheduleDecomposition({
     bodyStripped,
     isHeartbeat: Boolean(opts?.isHeartbeat),
     hasImages: Boolean(finalized.MediaPath),

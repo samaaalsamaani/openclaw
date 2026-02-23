@@ -89,6 +89,47 @@ export type VerificationInput = {
   reply: unknown; // ReplyPayload | ReplyPayload[] | undefined
 };
 
+// ── Cross-brain decomposition ─────────────────────────────────────────
+
+/**
+ * Schedules fire-and-forget decomposition for compound tasks.
+ * Secondary brains enrich the primary reply post-delivery.
+ * Dynamic import avoids circular chunk dependencies.
+ */
+export function scheduleDecomposition(input: VerificationInput): void {
+  if (input.isHeartbeat || !input.bodyStripped?.trim()) {
+    return;
+  }
+
+  const classResult = classifyTask({ message: input.bodyStripped, hasImages: input.hasImages });
+
+  import("./task-decomposer.js")
+    .then(({ shouldDecompose, executeDecomposition }) => {
+      if (!shouldDecompose(classResult)) {
+        return;
+      }
+      const reply = input.reply as { text?: string } | Array<{ text?: string }> | undefined;
+      const replyText = Array.isArray(reply)
+        ? reply.map((r) => r.text ?? "").join("\n")
+        : ((reply as { text?: string } | undefined)?.text ?? "");
+      if (!replyText) {
+        return;
+      }
+      return executeDecomposition({
+        classification: classResult,
+        originalPrompt: input.bodyStripped ?? "",
+        primaryReplyText: replyText,
+        originalProvider: input.provider,
+        originalModel: input.model,
+        runId: input.sessionId ?? "",
+        workspaceDir: input.workspaceDir,
+      });
+    })
+    .catch((err) => {
+      defaultRuntime.log?.("warn", `decomposition fire-and-forget failed: ${err}`);
+    });
+}
+
 /**
  * Schedules a fire-and-forget verification check using a different brain.
  * Dynamic import avoids circular chunk dependencies.
