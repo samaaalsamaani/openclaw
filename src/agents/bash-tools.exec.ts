@@ -9,6 +9,7 @@ import {
 } from "../infra/shell-env.js";
 import { logInfo } from "../logger.js";
 import { parseAgentSessionKey, resolveAgentIdFromSessionKey } from "../routing/session-key.js";
+import { enforceAutonomy } from "./autonomy-enforcer.js";
 import { markBackgrounded } from "./bash-process-registry.js";
 import { processGatewayAllowlist } from "./bash-tools.exec-host-gateway.js";
 import { executeNodeHostCommand } from "./bash-tools.exec-host-node.js";
@@ -220,6 +221,14 @@ export function createExecTool(
 
       if (!params.command) {
         throw new Error("Provide a command to start.");
+      }
+
+      // Autonomy enforcer — DB-driven trust layer (before approval pipeline)
+      const autonomy = enforceAutonomy(params.command);
+      if (autonomy.action === "deny") {
+        throw new Error(
+          `Command blocked by autonomy policy (pattern: ${autonomy.matchedRule ?? autonomy.pattern})`,
+        );
       }
 
       const maxOutput = DEFAULT_MAX_OUTPUT;
