@@ -481,6 +481,9 @@ export function applyPluginAutoEnable(params: {
     const alreadyEnabled =
       builtInChannelId != null
         ? (() => {
+            if (next.plugins?.entries?.[entry.pluginId]?.enabled === true) {
+              return true;
+            }
             const channels = next.channels as Record<string, unknown> | undefined;
             const channelConfig = channels?.[builtInChannelId];
             if (
