@@ -21,6 +21,8 @@ PATCHED_FILES=(
   "src/memory/qmd-manager.ts"
   "package.json"
   "src/config/plugin-auto-enable.ts"
+  "src/gateway/server-channels.ts"
+  "src/gateway/channel-health-monitor.ts"
   "apps/macos/Sources/OpenClaw/PermissionManager.swift"
 )
 

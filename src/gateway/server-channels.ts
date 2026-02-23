@@ -8,6 +8,7 @@ import { resetDirectoryCache } from "../infra/outbound/target-resolver.js";
 import type { createSubsystemLogger } from "../logging/subsystem.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
+import { emitChannelEvent } from "./channel-events.js";
 
 const CHANNEL_RESTART_POLICY: BackoffPolicy = {
   initialMs: 5_000,
@@ -188,6 +189,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
           lastError: null,
           reconnectAttempts: preserveRestartAttempts ? (restartAttempts.get(rKey) ?? 0) : 0,
         });
+        emitChannelEvent({ channelId, accountId: id, action: "start" });
 
         const log = channelLogs[channelId];
         const task = startAccount({
@@ -205,6 +207,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
             const message = formatErrorMessage(err);
             setRuntime(channelId, id, { accountId: id, lastError: message });
             log.error?.(`[${id}] channel exited: ${message}`);
+            emitChannelEvent({ channelId, accountId: id, action: "error", error: message });
           })
           .finally(() => {
             setRuntime(channelId, id, {
@@ -212,6 +215,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
               running: false,
               lastStopAt: Date.now(),
             });
+            emitChannelEvent({ channelId, accountId: id, action: "stop" });
           })
           .then(async () => {
             if (manuallyStopped.has(rKey)) {

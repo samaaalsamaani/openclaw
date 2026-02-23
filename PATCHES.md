@@ -12,6 +12,7 @@ Review before each upstream sync.
 - `src/agents/sdk-runner/mcp-servers.ts` — SDK MCP server builder
 - `src/agents/sdk-runner/sdk-runner.test.ts` — Test coverage (11 tests)
 - `src/agents/routing-middleware.ts` — Extracted routing + verification hooks (called from get-reply.ts)
+- `src/gateway/channel-events.ts` — Channel health observability (writes to observability.sqlite)
 - `.planning/` — PAIOS phase tracking
 
 ## Modified Files (must re-apply after upgrade)
@@ -23,6 +24,8 @@ Review before each upstream sync.
 | `src/memory/qmd-manager.ts`              | `PRAGMA busy_timeout = 5000` in ensureDb() (upstream has 1ms)                                                        | 1     |
 | `package.json`                           | Added `@anthropic-ai/claude-agent-sdk` dependency                                                                    | 1     |
 | `src/config/plugin-auto-enable.ts`       | `alreadyEnabled` also checks `plugins.entries` for built-in channels (upstream bug: adds `enabled` to strict schema) | 3     |
+| `src/gateway/server-channels.ts`         | Import channel-events; emit start/error/stop events                                                                  | 4     |
+| `src/gateway/channel-health-monitor.ts`  | Import channel-events; emit health_restart + restart-failed events                                                   | 7     |
 | `apps/macos/.../PermissionManager.swift` | Bundle ID nil guard in ensureNotifications() + status()                                                              | ~8    |
 
 ## Integration Architecture

@@ -1,5 +1,6 @@
 import type { ChannelId } from "../channels/plugins/types.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import { emitChannelEvent } from "./channel-events.js";
 import type { ChannelManager } from "./server-channels.js";
 
 const log = createSubsystemLogger("gateway/health-monitor");
@@ -130,6 +131,12 @@ export function startChannelHealthMonitor(deps: ChannelHealthMonitorDeps): Chann
             : "stuck";
 
           log.info?.(`[${channelId}:${accountId}] health-monitor: restarting (reason: ${reason})`);
+          emitChannelEvent({
+            channelId,
+            accountId,
+            action: "health_restart",
+            metadata: { reason, restartsThisHour: record.restartsThisHour.length },
+          });
 
           try {
             if (status.running) {
@@ -144,6 +151,12 @@ export function startChannelHealthMonitor(deps: ChannelHealthMonitorDeps): Chann
             log.error?.(
               `[${channelId}:${accountId}] health-monitor: restart failed: ${String(err)}`,
             );
+            emitChannelEvent({
+              channelId,
+              accountId,
+              action: "error",
+              error: `health-monitor restart failed: ${String(err)}`,
+            });
           }
         }
       }
