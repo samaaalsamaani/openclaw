@@ -203,7 +203,91 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
     });
     servers["gateway-system"] = systemServer;
 
-    log.info(`created ${Object.keys(servers).length} in-process MCP servers`);
+    // --- External MCP servers (stdio) ---
+
+    // Google Workspace — calendar, gmail, docs, drive, sheets, tasks
+    if (process.env.GOOGLE_OAUTH_CLIENT_ID) {
+      servers["google-workspace"] = {
+        type: "stdio",
+        command: "uvx",
+        args: ["workspace-mcp", "--tool-tier", "core", "--single-user"],
+        env: {
+          GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID,
+          GOOGLE_OAUTH_CLIENT_SECRET: process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? "",
+        },
+      };
+    }
+
+    // Cloudflare — Workers, D1, KV, R2, Pages management
+    servers["cloudflare"] = {
+      type: "stdio",
+      command: "npx",
+      args: ["-y", "@cloudflare/mcp-server-cloudflare"],
+    };
+
+    // Cloudflare Docs — documentation search via remote MCP
+    servers["cloudflare-docs"] = {
+      type: "stdio",
+      command: "npx",
+      args: ["-y", "mcp-remote", "https://docs.mcp.cloudflare.com/mcp"],
+    };
+
+    // Cloudflare Observability — logs, analytics, traces
+    servers["cloudflare-observability"] = {
+      type: "stdio",
+      command: "npx",
+      args: ["-y", "mcp-remote", "https://observability.mcp.cloudflare.com/mcp"],
+    };
+
+    // GitHub — repos, issues, PRs, code search, workflows
+    servers["github"] = {
+      type: "stdio",
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-github"],
+      env: {
+        GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN ?? "",
+      },
+    };
+
+    // Brave Search — web search, local search, news
+    servers["brave-search"] = {
+      type: "stdio",
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-brave-search"],
+      env: {
+        BRAVE_API_KEY: process.env.BRAVE_API_KEY ?? "",
+      },
+    };
+
+    // Puppeteer — browser automation, screenshots, web scraping
+    servers["puppeteer"] = {
+      type: "stdio",
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-puppeteer"],
+    };
+
+    // Filesystem — secure file operations on allowed paths
+    const home = process.env.HOME ?? "/Users/user";
+    servers["filesystem"] = {
+      type: "stdio",
+      command: "npx",
+      args: [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        `${home}/Documents/OpenClaw`,
+        `${home}/.openclaw/workspace`,
+        `${home}/Downloads`,
+      ],
+    };
+
+    // Sequential Thinking — dynamic reasoning chains
+    servers["sequential-thinking"] = {
+      type: "stdio",
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+    };
+
+    log.info(`created ${Object.keys(servers).length} MCP servers (in-process + external)`);
     return servers;
   } catch (err) {
     log.warn(
