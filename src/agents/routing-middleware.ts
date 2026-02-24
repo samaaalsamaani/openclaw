@@ -87,6 +87,12 @@ export type VerificationInput = {
   sessionId: string | undefined;
   workspaceDir: string;
   reply: unknown; // ReplyPayload | ReplyPayload[] | undefined
+  // Delivery context for enrichment follow-ups (optional)
+  originatingChannel?: string;
+  originatingTo?: string;
+  originatingAccountId?: string;
+  originatingThreadId?: string | number;
+  originatingSessionKey?: string;
 };
 
 // ── Compound orchestration gate ───────────────────────────────────────
@@ -182,6 +188,16 @@ export function scheduleDecomposition(input: VerificationInput): void {
         originalModel: input.model,
         runId: input.sessionId ?? "",
         workspaceDir: input.workspaceDir,
+        deliveryContext:
+          input.originatingChannel && input.originatingTo
+            ? {
+                channel: input.originatingChannel,
+                to: input.originatingTo,
+                sessionKey: input.originatingSessionKey,
+                accountId: input.originatingAccountId,
+                threadId: input.originatingThreadId,
+              }
+            : undefined,
       });
     })
     .catch((err) => {

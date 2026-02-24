@@ -441,6 +441,14 @@ export async function getReplyFromConfig(
     sessionId,
     workspaceDir,
     reply,
+    originatingChannel:
+      typeof finalized.OriginatingChannel === "string"
+        ? finalized.OriginatingChannel
+        : finalized.Provider,
+    originatingTo: finalized.OriginatingTo ?? finalized.To,
+    originatingAccountId: finalized.AccountId,
+    originatingThreadId: finalized.MessageThreadId,
+    originatingSessionKey: sessionKey,
   });
 
   return reply;

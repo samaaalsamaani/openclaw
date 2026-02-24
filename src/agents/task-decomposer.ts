@@ -29,6 +29,13 @@ export type DecompositionRequest = {
   originalModel: string;
   runId: string;
   workspaceDir: string;
+  deliveryContext?: {
+    channel: string;
+    to: string;
+    sessionKey?: string;
+    accountId?: string;
+    threadId?: string | number;
+  };
 };
 
 export type EnrichmentResult = {
@@ -128,6 +135,66 @@ function storeEnrichment(
     db.close();
   } catch (err) {
     log.debug(`handoff DB write failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+// ── Deliver enrichments as follow-up messages ───────────────────────
+
+const DOMAIN_LABELS: Record<string, string> = {
+  analysis: "Analysis",
+  creative: "Creative",
+  code: "Code",
+  search: "Search",
+  vision: "Vision",
+  system: "System",
+  schedule: "Schedule",
+};
+
+async function deliverEnrichments(
+  req: DecompositionRequest,
+  results: EnrichmentResult[],
+): Promise<void> {
+  if (!req.deliveryContext) {
+    return;
+  }
+
+  const deliverable = results.filter(
+    (r) => !r.error && r.content && !r.content.includes("ENRICHMENT_NOT_NEEDED"),
+  );
+  if (deliverable.length === 0) {
+    return;
+  }
+
+  try {
+    const { routeReply } = await import("../auto-reply/reply/route-reply.js");
+    const { loadConfig } = await import("../config/config.js");
+    const cfg = loadConfig();
+    const ctx = req.deliveryContext;
+
+    for (const result of deliverable) {
+      const label = DOMAIN_LABELS[result.domain] ?? result.domain;
+      const text = `[${label}] ${result.content}`;
+      try {
+        await routeReply({
+          payload: { text },
+          channel: ctx.channel as Parameters<typeof routeReply>[0]["channel"],
+          to: ctx.to,
+          sessionKey: ctx.sessionKey,
+          accountId: ctx.accountId,
+          threadId: ctx.threadId,
+          cfg,
+        });
+        log.info(`enrichment delivered: domain=${result.domain} channel=${ctx.channel}`);
+      } catch (err) {
+        log.warn(
+          `enrichment delivery failed: domain=${result.domain} error=${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+  } catch (err) {
+    log.warn(
+      `enrichment delivery setup failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 }
 
@@ -294,6 +361,13 @@ export async function executeDecomposition(req: DecompositionRequest): Promise<E
   log.info(
     `decomposition complete: ${successCount}/${results.length} enrichments, ${totalDurationMs}ms total`,
   );
+
+  // Deliver enrichments as follow-up messages to the originating channel
+  deliverEnrichments(req, results).catch((err) => {
+    log.warn(
+      `enrichment delivery fire-and-forget failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  });
 
   return results;
 }

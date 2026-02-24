@@ -504,6 +504,11 @@ export async function runReplyAgent(params: {
       sessionId: sessionKey,
       workspaceDir: process.cwd(),
       reply: payloadArray,
+      originatingChannel: replyToChannel,
+      originatingTo: sessionCtx.OriginatingTo ?? sessionCtx.To,
+      originatingAccountId: sessionCtx.AccountId,
+      originatingThreadId: sessionCtx.MessageThreadId,
+      originatingSessionKey: sessionKey,
     });
 
     // Drain any late tool/block deliveries before deciding there's "nothing to send".

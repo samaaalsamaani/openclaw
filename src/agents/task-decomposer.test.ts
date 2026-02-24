@@ -334,9 +334,9 @@ describe("executeDecomposition", () => {
       model: string;
       timeoutMs: number;
     };
-    // search domain maps to gemini-cli via PROVIDER_TO_CLI
-    expect(call.provider).toBe("gemini-cli");
-    expect(call.model).toBe("gemini-2.5-flash");
+    // search domain maps to claude-cli via PROVIDER_TO_CLI (anthropic → claude-cli)
+    expect(call.provider).toBe("claude-cli");
+    expect(call.model).toBe("claude-haiku-4-5");
     expect(call.timeoutMs).toBe(30_000);
   });
 
