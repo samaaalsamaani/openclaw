@@ -52,8 +52,15 @@ const VERIFIER_TABLE: Record<TaskDomain, { provider: string; model: string }> = 
 // ── Gate: only verify high-impact domains with high confidence ──────
 
 export function shouldVerify(domain: TaskDomain, confidence: number): boolean {
-  // High-impact domains: code bugs, creative tone, analysis accuracy, search freshness
-  const verifiableDomains: TaskDomain[] = ["code", "creative", "analysis", "search"];
+  // High-impact domains: code bugs, creative tone, analysis accuracy, search freshness, vision details, system safety
+  const verifiableDomains: TaskDomain[] = [
+    "code",
+    "creative",
+    "analysis",
+    "search",
+    "vision",
+    "system",
+  ];
   return confidence >= 80 && verifiableDomains.includes(domain);
 }
 
@@ -68,6 +75,10 @@ export function buildVerificationPrompt(req: VerificationRequest): string {
       "Check for: factual accuracy, unsupported claims, logical fallacies, missing nuance, outdated information.",
     search:
       "Check for: stale or outdated information, broken assumptions about current state, missing caveats about data freshness.",
+    vision:
+      "Check for: misidentified objects, incorrect spatial descriptions, missed text in images, wrong diagram interpretations.",
+    system:
+      "Check for: dangerous commands, incorrect paths/flags, missing safety warnings, OS-incompatible instructions.",
   };
   const domainGuidance =
     DOMAIN_GUIDANCE[req.domain] ??

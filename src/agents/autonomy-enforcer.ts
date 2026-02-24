@@ -379,6 +379,78 @@ export function enforceAutonomy(command: string): AutonomyDecision {
   }
 }
 
+// ── Trust Decay ──
+
+const DECAY_INTERVAL_DAYS = 30;
+const DECAY_AMOUNT = 2;
+
+/**
+ * Decay trust for rules that haven't been used in DECAY_INTERVAL_DAYS.
+ * Auto-promoted rules whose approvals drop below PROMOTION_THRESHOLD are
+ * demoted back to "ask". Call this periodically (e.g., weekly heartbeat).
+ * Returns the number of rules decayed.
+ */
+export function decayTrust(): number {
+  const db = getAutonomyDb();
+  if (!db) {
+    return 0;
+  }
+
+  try {
+    const cutoff = new Date(Date.now() - DECAY_INTERVAL_DAYS * 86_400_000).toISOString();
+    const staleRules = db
+      .prepare(
+        `SELECT * FROM action_rules
+         WHERE consecutive_approvals > 0
+           AND last_updated < ?
+           AND level != 'never'`,
+      )
+      .all(cutoff) as ActionRule[];
+
+    let decayed = 0;
+    for (const rule of staleRules) {
+      const newCount = Math.max(0, rule.consecutive_approvals - DECAY_AMOUNT);
+      const shouldDemote = rule.source === "auto_promoted" && newCount < PROMOTION_THRESHOLD;
+
+      if (shouldDemote) {
+        db.prepare(
+          `UPDATE action_rules SET level = 'ask', consecutive_approvals = ?,
+           last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`,
+        ).run(newCount, rule.id);
+        db.prepare("INSERT INTO approval_log (pattern, action, context) VALUES (?, 'deny', ?)").run(
+          rule.pattern,
+          `Trust decay: demoted from safe to ask (${rule.consecutive_approvals} -> ${newCount})`,
+        );
+        log.info(`autonomy: trust decay demoted "${rule.pattern}" from safe to ask`);
+      } else if (newCount < rule.consecutive_approvals) {
+        db.prepare(
+          `UPDATE action_rules SET consecutive_approvals = ?,
+           last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`,
+        ).run(newCount, rule.id);
+      }
+
+      if (newCount < rule.consecutive_approvals) {
+        decayed++;
+        emitAutonomyEvent({
+          action: "trust_decay",
+          pattern: rule.pattern,
+          level: shouldDemote ? "ask" : rule.level,
+          command: "",
+          matchedRule: rule.pattern,
+        });
+      }
+    }
+
+    if (decayed > 0) {
+      log.info(`autonomy: trust decay applied to ${decayed} rule(s)`);
+    }
+    return decayed;
+  } catch (err) {
+    log.warn?.(`trust decay failed: ${String(err)}`);
+    return 0;
+  }
+}
+
 // ── Testing Helpers ──
 
 /** Reset DB singletons (for testing). */
