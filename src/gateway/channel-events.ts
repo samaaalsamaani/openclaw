@@ -23,13 +23,17 @@ const DB_PATH = join(DB_DIR, "observability.sqlite");
 
 let db: DatabaseSync | null = null;
 let initFailed = false;
+let lastFailTime = 0;
 
 function getDb(): DatabaseSync | null {
   if (db) {
     return db;
   }
-  if (initFailed) {
+  if (initFailed && Date.now() - lastFailTime < 60_000) {
     return null;
+  }
+  if (initFailed) {
+    initFailed = false; // Retry after 60s
   }
 
   try {
@@ -43,6 +47,7 @@ function getDb(): DatabaseSync | null {
     return db;
   } catch (err) {
     initFailed = true;
+    lastFailTime = Date.now();
     log.warn?.(`observability DB unavailable, channel events will be skipped: ${String(err)}`);
     return null;
   }

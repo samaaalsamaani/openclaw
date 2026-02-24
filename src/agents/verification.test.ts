@@ -218,12 +218,12 @@ describe("executeVerification", () => {
     expect(result.issues).toHaveLength(2);
   });
 
-  it("assumes pass on CLI failure", async () => {
+  it("assumes fail on CLI failure (conservative)", async () => {
     runCliAgentMock.mockRejectedValue(new Error("CLI timed out"));
 
     const result = await executeVerification(makeRequest());
 
-    expect(result.passed).toBe(true);
+    expect(result.passed).toBe(false);
     expect(result.confidence).toBe(0);
     expect(result.issues).toContain("Verification agent failed to respond");
   });

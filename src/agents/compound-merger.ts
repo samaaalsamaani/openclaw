@@ -102,7 +102,7 @@ async function llmMerge(
     prompt: mergePrompt,
     provider: resolveCliProvider("anthropic"),
     model: "claude-haiku-4-5",
-    timeoutMs: Math.min(opts.timeoutMs, 15_000),
+    timeoutMs: opts.timeoutMs,
     runId: mergeRunId,
   });
 

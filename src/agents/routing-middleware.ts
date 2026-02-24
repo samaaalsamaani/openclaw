@@ -55,6 +55,7 @@ export function applyMultiBrainRouting(input: RoutingInput): RoutingResult {
       model: classification.model,
       confidence: classification.confidence,
       reason: classification.reason,
+      applied: classification.confidence >= dynamicConfidenceThreshold,
       ...(classification.isCompound
         ? {
             isCompound: true,

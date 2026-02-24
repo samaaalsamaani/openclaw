@@ -229,16 +229,19 @@ export async function orchestrateCompoundTask(input: {
     secondaryDomains: secondaryDomains.map((s) => s.domain),
   });
 
+  // Sub-task timeout: capped at overall timeout to prevent outliving orchestration
+  const subtaskTimeout = Math.min(SUBTASK_TIMEOUT_MS, overallTimeout);
+
   // Execute primary + all secondaries in parallel
   const primaryPromise = executeSubTask(
     classification.domain,
     originalPrompt,
     workspaceDir,
-    SUBTASK_TIMEOUT_MS,
+    subtaskTimeout,
   );
 
   const secondaryPromises = secondaryDomains.map((s) =>
-    executeSubTask(s.domain, originalPrompt, workspaceDir, SUBTASK_TIMEOUT_MS),
+    executeSubTask(s.domain, originalPrompt, workspaceDir, subtaskTimeout),
   );
 
   // Race against overall timeout

@@ -55,16 +55,21 @@ type ActionRule = {
 
 let autonomyDb: DatabaseSync | null = null;
 let autonomyInitFailed = false;
+let autonomyLastFailTime = 0;
 
 let observabilityDb: DatabaseSync | null = null;
 let observabilityInitFailed = false;
+let observabilityLastFailTime = 0;
 
 function getAutonomyDb(): DatabaseSync | null {
   if (autonomyDb) {
     return autonomyDb;
   }
-  if (autonomyInitFailed) {
+  if (autonomyInitFailed && Date.now() - autonomyLastFailTime < 60_000) {
     return null;
+  }
+  if (autonomyInitFailed) {
+    autonomyInitFailed = false;
   }
 
   try {
@@ -99,6 +104,7 @@ function getAutonomyDb(): DatabaseSync | null {
     return autonomyDb;
   } catch (err) {
     autonomyInitFailed = true;
+    autonomyLastFailTime = Date.now();
     log.warn?.(`autonomy DB unavailable, enforcement will be skipped: ${String(err)}`);
     return null;
   }
@@ -108,8 +114,11 @@ function getObservabilityDb(): DatabaseSync | null {
   if (observabilityDb) {
     return observabilityDb;
   }
-  if (observabilityInitFailed) {
+  if (observabilityInitFailed && Date.now() - observabilityLastFailTime < 60_000) {
     return null;
+  }
+  if (observabilityInitFailed) {
+    observabilityInitFailed = false;
   }
 
   try {
@@ -123,6 +132,7 @@ function getObservabilityDb(): DatabaseSync | null {
     return observabilityDb;
   } catch (err) {
     observabilityInitFailed = true;
+    observabilityLastFailTime = Date.now();
     log.warn?.(`observability DB unavailable, autonomy events will be skipped: ${String(err)}`);
     return null;
   }
@@ -224,36 +234,46 @@ function recordDecision(
     );
 
     if (action === "approve") {
-      // Check if rule exists
-      const existing = db.prepare("SELECT * FROM action_rules WHERE pattern = ?").get(pattern) as
-        | ActionRule
-        | undefined;
+      // Wrap in transaction to prevent race conditions on concurrent approvals
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        // Re-read inside transaction for atomicity
+        const existing = db.prepare("SELECT * FROM action_rules WHERE pattern = ?").get(pattern) as
+          | ActionRule
+          | undefined;
 
-      if (existing) {
-        const newCount = existing.consecutive_approvals + 1;
-        if (newCount >= PROMOTION_THRESHOLD && existing.level === "ask") {
-          // Auto-promote to safe
-          db.prepare(
-            `UPDATE action_rules SET level = 'safe', source = 'auto_promoted',
-             consecutive_approvals = ?, last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-             WHERE pattern = ?`,
-          ).run(newCount, pattern);
-          db.prepare(
-            "INSERT INTO approval_log (pattern, action, context) VALUES (?, 'auto_promote', ?)",
-          ).run(pattern, `Auto-promoted after ${newCount} consecutive approvals`);
-          log.info(`autonomy: auto-promoted "${pattern}" to safe after ${newCount} approvals`);
+        if (existing) {
+          const newCount = existing.consecutive_approvals + 1;
+          if (newCount >= PROMOTION_THRESHOLD && existing.level === "ask") {
+            // Auto-promote to safe
+            db.prepare(
+              `UPDATE action_rules SET level = 'safe', source = 'auto_promoted',
+               consecutive_approvals = ?, last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+               WHERE pattern = ?`,
+            ).run(newCount, pattern);
+            db.prepare(
+              "INSERT INTO approval_log (pattern, action, context) VALUES (?, 'auto_promote', ?)",
+            ).run(pattern, `Auto-promoted after ${newCount} consecutive approvals`);
+            log.info(`autonomy: auto-promoted "${pattern}" to safe after ${newCount} approvals`);
+          } else {
+            db.prepare(
+              `UPDATE action_rules SET consecutive_approvals = ?,
+               last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE pattern = ?`,
+            ).run(newCount, pattern);
+          }
         } else {
+          // Create new rule at "ask" level for previously unknown patterns
           db.prepare(
-            `UPDATE action_rules SET consecutive_approvals = ?,
-             last_updated = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE pattern = ?`,
-          ).run(newCount, pattern);
+            `INSERT OR IGNORE INTO action_rules (pattern, level, source, consecutive_approvals)
+             VALUES (?, 'ask', 'learned', 1)`,
+          ).run(pattern);
         }
-      } else {
-        // Create new rule at "ask" level for previously unknown patterns
-        db.prepare(
-          `INSERT OR IGNORE INTO action_rules (pattern, level, source, consecutive_approvals)
-           VALUES (?, 'ask', 'learned', 1)`,
-        ).run(pattern);
+        db.exec("COMMIT");
+      } catch (txErr) {
+        try {
+          db.exec("ROLLBACK");
+        } catch {}
+        throw txErr;
       }
     }
   } catch (err) {

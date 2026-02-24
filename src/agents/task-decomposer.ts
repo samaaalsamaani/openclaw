@@ -222,6 +222,17 @@ export async function executeDecomposition(req: DecompositionRequest): Promise<E
   // Run all secondary brains in parallel with individual 30s timeouts
   const promises = secondaryDomains.map(async (secondary): Promise<EnrichmentResult> => {
     const enricher = ENRICHMENT_TABLE[secondary.domain];
+    if (!enricher) {
+      log.warn(`enrichment: unknown domain "${secondary.domain}", skipping`);
+      return {
+        domain: secondary.domain,
+        provider: "unknown",
+        model: "unknown",
+        content: "",
+        durationMs: 0,
+        error: `unknown domain: ${secondary.domain}`,
+      };
+    }
     const enrichmentRunId = crypto.randomUUID();
     const prompt = buildEnrichmentPrompt(
       secondary.domain,

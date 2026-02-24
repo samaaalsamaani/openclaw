@@ -150,7 +150,7 @@ export async function executeVerification(req: VerificationRequest): Promise<Ver
   } catch (err) {
     log.warn(`verification failed: ${err instanceof Error ? err.message : String(err)}`);
     result = {
-      passed: true, // Assume pass on verification failure (don't penalize)
+      passed: false, // Conservative: don't assume pass on verification failure
       confidence: 0,
       issues: ["Verification agent failed to respond"],
       verifierProvider: verifier.provider,

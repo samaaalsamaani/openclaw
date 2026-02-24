@@ -5,7 +5,7 @@
  * as the Gateway — no additional stdio child processes needed.
  *
  * Servers created:
- *   • gateway-kb — KB query, article, recent, stats, entities, graph, decisions, playbooks, contradictions, smart_query
+ *   • gateway-kb — KB query, article, recent, stats, entities, graph, decisions, playbooks, contradictions, smart_query, communities
  *   • gateway-system — hostname, uptime, platform info
  */
 
@@ -36,7 +36,7 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
     // --- Knowledge Base MCP server ---
     const kbServer = createSdkMcpServer({
       name: "gateway-kb",
-      version: "2.0.0",
+      version: "2.1.0",
       tools: [
         tool(
           "kb_query",
@@ -154,6 +154,17 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
           { query: z.string(), agent_type: z.string().optional(), limit: z.number().optional() },
           async ({ query, agent_type, limit }) => {
             const results = kbSmartQuery(query, agent_type, limit ?? 5);
+            return {
+              content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
+            };
+          },
+        ),
+        tool(
+          "kb_communities",
+          "List entity communities — clusters of related knowledge",
+          { community_id: z.number().optional(), limit: z.number().optional() },
+          async ({ community_id, limit }) => {
+            const results = kbCommunities(community_id, limit ?? 10);
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
@@ -503,6 +514,23 @@ function kbContradictions(unresolvedOnly: boolean, articleId: number | undefined
        ORDER BY c.created_at DESC LIMIT ?`,
     )
     .all(...params);
+}
+
+function kbCommunities(communityId: number | undefined, limit: number) {
+  const db = getKbDb();
+  const safeLimit = Math.max(1, Math.min(limit, 50));
+
+  if (communityId != null) {
+    return db
+      .prepare(
+        `SELECT id, name, type, centrality_score, mention_count
+         FROM entities WHERE community_id = ?
+         ORDER BY centrality_score DESC LIMIT ?`,
+      )
+      .all(communityId, safeLimit);
+  }
+
+  return db.prepare("SELECT * FROM communities ORDER BY entity_count DESC LIMIT ?").all(safeLimit);
 }
 
 function kbSmartQuery(query: string, agentType: string | undefined, limit: number) {
