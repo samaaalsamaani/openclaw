@@ -183,6 +183,10 @@ export async function getReplyFromConfig(
   if (routing.applied) {
     provider = routing.provider!;
     model = routing.model!;
+    // Strip @prefix from message so models don't see it
+    if (routing.strippedMessage) {
+      bodyStripped = routing.strippedMessage;
+    }
   }
 
   // ── Compound orchestration (PAIOS) ──

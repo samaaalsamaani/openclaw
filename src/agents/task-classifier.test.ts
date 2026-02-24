@@ -205,3 +205,78 @@ describe("ClassificationResult shape", () => {
     expect(ALL_DOMAINS).toContain(result.domain);
   });
 });
+
+// ── @Prefix routing ────────────────────────────────────────────────
+
+describe("@prefix routing", () => {
+  it("@code forces code domain", () => {
+    const result = classifyTask({ message: "@code tell me a joke" });
+    expect(result.domain).toBe("code");
+    expect(result.confidence).toBe(100);
+    expect(result.overrideSource).toBe("prefix");
+    expect(result.strippedMessage).toBe("tell me a joke");
+  });
+
+  it("@creative forces creative domain", () => {
+    const result = classifyTask({ message: "@creative debug this function" });
+    expect(result.domain).toBe("creative");
+    expect(result.confidence).toBe(100);
+    expect(result.strippedMessage).toBe("debug this function");
+  });
+
+  it("@search forces search domain", () => {
+    const result = classifyTask({ message: "@search what is the meaning of life" });
+    expect(result.domain).toBe("search");
+    expect(result.provider).toBe("google-gemini-cli");
+  });
+
+  it("@analysis forces analysis domain", () => {
+    const result = classifyTask({ message: "@analysis hello world" });
+    expect(result.domain).toBe("analysis");
+  });
+
+  it("@vision forces vision domain", () => {
+    const result = classifyTask({ message: "@vision check this out" });
+    expect(result.domain).toBe("vision");
+    expect(result.provider).toBe("google-gemini-cli");
+  });
+
+  it("@fast routes to system/Haiku with fast flag", () => {
+    const result = classifyTask({ message: "@fast what is 2+2" });
+    expect(result.domain).toBe("system");
+    expect(result.fast).toBe(true);
+    expect(result.strippedMessage).toBe("what is 2+2");
+  });
+
+  it("@compound forces multi-brain orchestration", () => {
+    const result = classifyTask({ message: "@compound write a blog post" });
+    expect(result.isCompound).toBe(true);
+    expect(result.secondaryDomains).toBeDefined();
+    expect(result.secondaryDomains!.length).toBeGreaterThanOrEqual(5);
+    expect(result.overrideSource).toBe("prefix");
+    expect(result.strippedMessage).toBe("write a blog post");
+  });
+
+  it("@compound excludes primary from secondaries", () => {
+    const result = classifyTask({ message: "@compound debug this typescript function" });
+    expect(result.isCompound).toBe(true);
+    const secondaryDomains = result.secondaryDomains!.map((s) => s.domain);
+    expect(secondaryDomains).not.toContain(result.domain);
+  });
+
+  it("is case-insensitive", () => {
+    const result = classifyTask({ message: "@CODE fix this bug" });
+    expect(result.domain).toBe("code");
+    expect(result.overrideSource).toBe("prefix");
+  });
+
+  it("ignores unknown prefixes", () => {
+    const result = classifyTask({ message: "@unknown hello" });
+    expect(result.overrideSource).not.toBe("prefix");
+  });
+
+  it("ignores prefix not at start of message", () => {
+    const result = classifyTask({ message: "please @code fix this" });
+    expect(result.overrideSource).not.toBe("prefix");
+  });
+});

@@ -31,6 +31,8 @@ export type RoutingResult = {
   provider?: string;
   model?: string;
   classification?: ClassificationResult;
+  /** Message with @prefix stripped (use instead of raw body when set) */
+  strippedMessage?: string;
 };
 
 /**
@@ -71,6 +73,7 @@ export function applyMultiBrainRouting(input: RoutingInput): RoutingResult {
       provider: classification.provider,
       model: classification.model,
       classification,
+      strippedMessage: classification.strippedMessage,
     };
   }
 

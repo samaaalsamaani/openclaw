@@ -35,9 +35,13 @@ export type ClassificationResult = {
   model: string;
   confidence: number; // 0-100
   reason: string;
-  overrideSource?: "user" | "image" | "heuristic";
+  overrideSource?: "user" | "image" | "heuristic" | "prefix";
   secondaryDomains?: Array<{ domain: TaskDomain; confidence: number }>;
   isCompound?: boolean;
+  /** When an @prefix was detected, this holds the message with prefix stripped */
+  strippedMessage?: string;
+  /** @fast flag — downstream should use faster/cheaper models */
+  fast?: boolean;
 };
 
 // ── Keyword rules (order matters — first match wins within each domain) ──
@@ -591,6 +595,44 @@ function applyRoutingWeights(): void {
 
 applyRoutingWeights();
 
+// ── @Prefix syntax ───────────────────────────────────────────────────
+// Users can prefix messages with @domain to force routing:
+//   @code, @creative, @analysis, @search, @vision, @system, @schedule
+//   @compound — force multi-brain orchestration
+//   @fast     — use faster/cheaper models (Haiku/Flash)
+
+const PREFIX_TO_DOMAIN: Record<string, TaskDomain> = {
+  code: "code",
+  creative: "creative",
+  analysis: "analysis",
+  search: "search",
+  vision: "vision",
+  system: "system",
+  schedule: "schedule",
+};
+
+const ALL_DOMAINS: TaskDomain[] = [
+  "code",
+  "creative",
+  "analysis",
+  "search",
+  "vision",
+  "system",
+  "schedule",
+];
+
+function extractPrefix(message: string): { prefix: string | null; cleaned: string } {
+  const match = message.match(/^\s*@(\w+)\s+/i);
+  if (!match) {
+    return { prefix: null, cleaned: message };
+  }
+  const prefix = match[1].toLowerCase();
+  if (prefix in PREFIX_TO_DOMAIN || prefix === "compound" || prefix === "fast") {
+    return { prefix, cleaned: message.slice(match[0].length) };
+  }
+  return { prefix: null, cleaned: message };
+}
+
 // ── Classifier ──────────────────────────────────────────────────────
 
 export type ClassifyTaskInput = {
@@ -602,6 +644,50 @@ export type ClassifyTaskInput = {
 
 export function classifyTask(input: ClassifyTaskInput): ClassificationResult {
   const { message, hasImages } = input;
+
+  // 0. Check for @prefix override (highest priority)
+  const { prefix, cleaned } = extractPrefix(message);
+  if (prefix === "compound") {
+    // Classify on cleaned message, then force compound with all secondaries
+    const primary = classifyTask({ message: cleaned, hasImages });
+    return {
+      ...primary,
+      isCompound: true,
+      secondaryDomains: ALL_DOMAINS.filter((d) => d !== primary.domain).map((d) => ({
+        domain: d,
+        confidence: 85,
+      })),
+      reason: `@compound → ${primary.domain} primary + all secondaries`,
+      overrideSource: "prefix",
+      strippedMessage: cleaned,
+    };
+  }
+  if (prefix === "fast") {
+    const route = ROUTING_TABLE.system; // Haiku = fastest
+    return {
+      domain: "system",
+      provider: route.provider,
+      model: route.model,
+      confidence: 100,
+      reason: "@fast → Haiku (fastest model)",
+      overrideSource: "prefix",
+      strippedMessage: cleaned,
+      fast: true,
+    };
+  }
+  if (prefix && prefix in PREFIX_TO_DOMAIN) {
+    const domain = PREFIX_TO_DOMAIN[prefix];
+    const route = ROUTING_TABLE[domain];
+    return {
+      domain,
+      provider: route.provider,
+      model: route.model,
+      confidence: 100,
+      reason: `@${prefix} → ${domain}`,
+      overrideSource: "prefix",
+      strippedMessage: cleaned,
+    };
+  }
 
   // 1. Check for explicit override (already resolved by caller)
   if (input.explicitOverride) {
