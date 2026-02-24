@@ -40,7 +40,7 @@ vi.mock("node:sqlite", () => ({
 // Mock execFile to avoid spawning processes
 vi.mock("node:child_process", async (importOriginal) => {
   const actual = await importOriginal();
-  return { ...actual, execFile: vi.fn() };
+  return { ...(actual as typeof import("node:child_process")), execFile: vi.fn() };
 });
 
 import { DOMAIN_GUIDANCE, ENRICHMENT_TABLE } from "./compound-shared.js";
