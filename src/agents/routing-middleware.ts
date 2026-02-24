@@ -89,6 +89,65 @@ export type VerificationInput = {
   reply: unknown; // ReplyPayload | ReplyPayload[] | undefined
 };
 
+// ── Compound orchestration gate ───────────────────────────────────────
+
+/**
+ * Determines if pre-reply compound orchestration should activate.
+ * Checks: not heartbeat, has body, isCompound, secondaries above threshold.
+ */
+export function shouldOrchestrate(input: RoutingInput): {
+  shouldOrchestrate: boolean;
+  classification?: ClassificationResult;
+} {
+  if (input.isHeartbeat || input.hasResolvedHeartbeatModelOverride || !input.bodyStripped?.trim()) {
+    return { shouldOrchestrate: false };
+  }
+
+  const classification = classifyTask({ message: input.bodyStripped, hasImages: input.hasImages });
+
+  if (
+    !classification.isCompound ||
+    !classification.secondaryDomains ||
+    classification.secondaryDomains.length === 0
+  ) {
+    return { shouldOrchestrate: false, classification };
+  }
+
+  // At least one secondary must meet the confidence threshold
+  const hasQualifiedSecondary = classification.secondaryDomains.some(
+    (s) => s.confidence >= dynamicConfidenceThreshold,
+  );
+
+  return { shouldOrchestrate: hasQualifiedSecondary, classification };
+}
+
+/**
+ * Runs compound orchestration via dynamic import to avoid circular deps.
+ * Returns merged text or null (fall through to normal path).
+ */
+export async function runCompoundOrchestration(input: {
+  classification: ClassificationResult;
+  bodyStripped: string;
+  sessionId: string;
+  workspaceDir: string;
+  timeoutMs: number;
+}): Promise<{ text: string } | null> {
+  const { orchestrateCompoundTask } = await import("./compound-orchestrator.js");
+  const result = await orchestrateCompoundTask({
+    classification: input.classification,
+    originalPrompt: input.bodyStripped,
+    sessionId: input.sessionId,
+    workspaceDir: input.workspaceDir,
+    timeoutMs: input.timeoutMs,
+  });
+
+  if (!result || !result.mergedText) {
+    return null;
+  }
+
+  return { text: result.mergedText };
+}
+
 // ── Cross-brain decomposition ─────────────────────────────────────────
 
 /**

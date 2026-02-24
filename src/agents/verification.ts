@@ -108,17 +108,9 @@ export function getVerifier(domain: TaskDomain): { provider: string; model: stri
   return VERIFIER_TABLE[domain] ?? VERIFIER_TABLE.code;
 }
 
-// ── Provider mapping for CLI runner ──────────────────────────────────
+// ── Shared constants (extracted to compound-shared.ts) ──────────────
 
-const PROVIDER_TO_CLI: Record<string, string> = {
-  anthropic: "claude-cli",
-  "google-gemini-cli": "gemini-cli",
-  "openai-codex": "codex-cli",
-};
-
-function resolveCliProvider(provider: string): string {
-  return PROVIDER_TO_CLI[provider] ?? provider;
-}
+import { resolveCliProvider } from "./compound-shared.js";
 
 // ── Execute verification against a different brain ──────────────────
 

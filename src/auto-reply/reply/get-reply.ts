@@ -7,8 +7,10 @@ import {
 import { resolveModelRefFromString } from "../../agents/model-selection.js";
 import {
   applyMultiBrainRouting,
+  runCompoundOrchestration,
   scheduleDecomposition,
   scheduleVerification,
+  shouldOrchestrate,
 } from "../../agents/routing-middleware.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
 import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../../agents/workspace.js";
@@ -181,6 +183,35 @@ export async function getReplyFromConfig(
   if (routing.applied) {
     provider = routing.provider!;
     model = routing.model!;
+  }
+
+  // ── Compound orchestration (PAIOS) ──
+  // For compound tasks, execute multiple brains in parallel and merge results pre-reply.
+  if (routing.classification?.isCompound && routing.applied) {
+    const orchDecision = shouldOrchestrate({
+      bodyStripped,
+      isHeartbeat: Boolean(opts?.isHeartbeat),
+      hasResolvedHeartbeatModelOverride,
+      hasImages: Boolean(finalized.MediaPath),
+      sessionId,
+    });
+    if (orchDecision.shouldOrchestrate && orchDecision.classification) {
+      try {
+        const orchResult = await runCompoundOrchestration({
+          classification: orchDecision.classification,
+          bodyStripped: bodyStripped ?? "",
+          sessionId: sessionId ?? "",
+          workspaceDir: workspaceDirRaw,
+          timeoutMs,
+        });
+        if (orchResult) {
+          typing.cleanup();
+          return { text: orchResult.text };
+        }
+      } catch {
+        // Orchestration failed — fall through to single-brain path
+      }
+    }
   }
 
   await applyResetModelOverride({
