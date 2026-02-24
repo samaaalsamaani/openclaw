@@ -23,8 +23,8 @@ export const ENRICHMENT_TABLE: Record<TaskDomain, { provider: string; model: str
   code: { provider: "openai-codex", model: "gpt-5.3-codex" },
   creative: { provider: "anthropic", model: "claude-opus-4-6" },
   analysis: { provider: "anthropic", model: "claude-sonnet-4-5" },
-  search: { provider: "google-gemini-cli", model: "gemini-2.5-flash" },
-  vision: { provider: "google-gemini-cli", model: "gemini-2.5-pro" },
+  search: { provider: "anthropic", model: "claude-haiku-4-5" },
+  vision: { provider: "anthropic", model: "claude-sonnet-4-5" },
   system: { provider: "anthropic", model: "claude-haiku-4-5" },
   schedule: { provider: "anthropic", model: "claude-haiku-4-5" },
 };

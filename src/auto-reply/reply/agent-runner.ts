@@ -4,6 +4,7 @@ import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { resolveModelAuthMode } from "../../agents/model-auth.js";
 import { isCliProvider } from "../../agents/model-selection.js";
 import { queueEmbeddedPiMessage } from "../../agents/pi-embedded.js";
+import { scheduleDecomposition } from "../../agents/routing-middleware.js";
 import { hasNonzeroUsage } from "../../agents/usage.js";
 import {
   resolveAgentIdFromSessionKey,
@@ -491,6 +492,18 @@ export async function runReplyAgent(params: {
       contextTokensUsed,
       systemPromptReport: runResult.meta?.systemPromptReport,
       cliSessionId,
+    });
+
+    // Fire-and-forget cross-brain decomposition for compound tasks (PAIOS)
+    scheduleDecomposition({
+      bodyStripped: commandBody,
+      isHeartbeat: Boolean(isHeartbeat),
+      hasImages: Boolean(opts?.images?.length),
+      provider: providerUsed,
+      model: modelUsed,
+      sessionId: sessionKey,
+      workspaceDir: process.cwd(),
+      reply: payloadArray,
     });
 
     // Drain any late tool/block deliveries before deciding there's "nothing to send".
