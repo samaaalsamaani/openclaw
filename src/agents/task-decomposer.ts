@@ -158,8 +158,12 @@ async function deliverEnrichments(
     return;
   }
 
+  const SKIP_PATTERNS = ["ENRICHMENT_NOT_NEEDED", "NO_REPLY"];
   const deliverable = results.filter(
-    (r) => !r.error && r.content && !r.content.includes("ENRICHMENT_NOT_NEEDED"),
+    (r) =>
+      !r.error &&
+      r.content.trim().length > 20 &&
+      !SKIP_PATTERNS.some((p) => r.content.trim() === p || r.content.includes(p)),
   );
   if (deliverable.length === 0) {
     return;
