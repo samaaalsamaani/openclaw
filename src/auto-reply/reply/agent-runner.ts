@@ -4,7 +4,11 @@ import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { resolveModelAuthMode } from "../../agents/model-auth.js";
 import { isCliProvider } from "../../agents/model-selection.js";
 import { queueEmbeddedPiMessage } from "../../agents/pi-embedded.js";
-import { scheduleDecomposition, scheduleVerification } from "../../agents/routing-middleware.js";
+import {
+  applyMultiBrainRouting,
+  scheduleDecomposition,
+  scheduleVerification,
+} from "../../agents/routing-middleware.js";
 import { hasNonzeroUsage } from "../../agents/usage.js";
 import {
   resolveAgentIdFromSessionKey,
@@ -160,6 +164,20 @@ export async function runReplyAgent(params: {
   let activeIsNewSession = isNewSession;
 
   const isHeartbeat = opts?.isHeartbeat === true;
+
+  // ── Multi-brain @prefix routing (PAIOS) ──
+  const routing = applyMultiBrainRouting({
+    bodyStripped: commandBody,
+    isHeartbeat,
+    hasResolvedHeartbeatModelOverride: false,
+    hasImages: Boolean(opts?.images?.length),
+    sessionId: sessionKey,
+  });
+  let effectiveCommandBody = commandBody;
+  if (routing.applied && routing.strippedMessage) {
+    effectiveCommandBody = routing.strippedMessage;
+  }
+
   const typingSignals = createTypingSignaler({
     typing,
     mode: typingMode,
@@ -361,7 +379,7 @@ export async function runReplyAgent(params: {
   try {
     const runStartedAt = Date.now();
     const runOutcome = await runAgentTurnWithFallback({
-      commandBody,
+      commandBody: effectiveCommandBody,
       followupRun,
       sessionCtx,
       opts,
@@ -496,7 +514,7 @@ export async function runReplyAgent(params: {
 
     // Fire-and-forget cross-brain decomposition for compound tasks (PAIOS)
     scheduleDecomposition({
-      bodyStripped: commandBody,
+      bodyStripped: effectiveCommandBody,
       isHeartbeat: Boolean(isHeartbeat),
       hasImages: Boolean(opts?.images?.length),
       provider: providerUsed,
@@ -513,7 +531,7 @@ export async function runReplyAgent(params: {
 
     // Fire-and-forget verification quality gate (PAIOS)
     scheduleVerification({
-      bodyStripped: commandBody,
+      bodyStripped: effectiveCommandBody,
       isHeartbeat: Boolean(isHeartbeat),
       hasImages: Boolean(opts?.images?.length),
       provider: providerUsed,
