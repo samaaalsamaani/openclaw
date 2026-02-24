@@ -41,10 +41,10 @@ export type VerificationResult = {
 
 const VERIFIER_TABLE: Record<TaskDomain, { provider: string; model: string }> = {
   code: { provider: "anthropic", model: "claude-haiku-4-5" },
-  creative: { provider: "google-gemini-cli", model: "gemini-2.5-flash" },
-  analysis: { provider: "google-gemini-cli", model: "gemini-2.5-flash" },
+  creative: { provider: "anthropic", model: "claude-haiku-4-5" },
+  analysis: { provider: "anthropic", model: "claude-haiku-4-5" },
   vision: { provider: "anthropic", model: "claude-haiku-4-5" },
-  system: { provider: "openai-codex", model: "gpt-5.3-codex" },
+  system: { provider: "anthropic", model: "claude-haiku-4-5" },
   schedule: { provider: "anthropic", model: "claude-haiku-4-5" },
   search: { provider: "anthropic", model: "claude-haiku-4-5" },
 };

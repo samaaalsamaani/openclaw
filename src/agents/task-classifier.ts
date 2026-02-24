@@ -720,10 +720,10 @@ export function classifyTask(input: ClassifyTaskInput): ClassificationResult {
     const best = scores[0];
     const route = ROUTING_TABLE[best.domain];
 
-    // Compound detection: collect runner-up domains above threshold and within 20 points of best
+    // Compound detection: collect runner-up domains above threshold and within 40 points of best
     const runnerUps = scores
       .slice(1)
-      .filter((s) => s.score >= dynamicConfidenceThreshold && s.score >= best.score - 20)
+      .filter((s) => s.score >= dynamicConfidenceThreshold && s.score >= best.score - 40)
       .map((s) => ({ domain: s.domain, confidence: s.score }));
 
     const result: ClassificationResult = {
