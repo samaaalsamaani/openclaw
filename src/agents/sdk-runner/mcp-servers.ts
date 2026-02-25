@@ -718,6 +718,53 @@ function kbCommunities(communityId: number | undefined, limit: number) {
   return db.prepare("SELECT * FROM communities ORDER BY entity_count DESC LIMIT ?").all(safeLimit);
 }
 
+/**
+ * Lightweight KB context retrieval for Auto-RAG injection.
+ * Returns formatted markdown of top FTS5 results (title + L2 summary + tags).
+ * Designed for pre-reply system prompt injection — fast, read-only, never throws.
+ */
+export function queryKbForContext(query: string, limit = 5): string {
+  try {
+    const db = getKbDb();
+    const safeLimit = Math.max(1, Math.min(limit, 10));
+    const safeQuery = query.replace(/[^\p{L}\p{N}\s]/gu, " ").trim();
+    if (!safeQuery || safeQuery.length < 3) {
+      return "";
+    }
+
+    const rows = db
+      .prepare(
+        `SELECT a.id, a.title, a.summary_l2, a.tags
+         FROM articles_fts fts
+         JOIN articles a ON a.id = fts.rowid
+         WHERE articles_fts MATCH ?
+           AND NOT (a.para_type = 'archive' AND a.para_area = 'Build Artifacts')
+         ORDER BY rank
+         LIMIT ?`,
+      )
+      .all(safeQuery, safeLimit) as Array<{
+      id: number;
+      title: string;
+      summary_l2: string | null;
+      tags: string | null;
+    }>;
+
+    if (!rows || rows.length === 0) {
+      return "";
+    }
+
+    const lines = rows.map((r) => {
+      const summary = (r.summary_l2 ?? "").slice(0, 500);
+      const tags = r.tags ? ` [${r.tags}]` : "";
+      return `- **${r.title}**${tags}\n  ${summary}`;
+    });
+
+    return lines.join("\n");
+  } catch {
+    return "";
+  }
+}
+
 async function kbSmartQuery(query: string, agentType: string | undefined, limit: number) {
   const db = getKbDb();
   const safeLimit = Math.max(1, Math.min(limit, 10));

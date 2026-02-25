@@ -7,6 +7,7 @@ import {
   isEmbeddedPiRunStreaming,
   resolveEmbeddedSessionLane,
 } from "../../agents/pi-embedded.js";
+import { queryKbForContext } from "../../agents/sdk-runner/mcp-servers.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import {
   resolveGroupSessionKey,
@@ -257,7 +258,27 @@ export async function runPreparedReply(
   const inboundMetaPrompt = buildInboundMetaSystemPrompt(
     isNewSession ? sessionCtx : { ...sessionCtx, ThreadStarterBody: undefined },
   );
-  const extraSystemPrompt = [inboundMetaPrompt, groupChatContext, groupIntro, groupSystemPrompt]
+  // Auto-RAG: inject relevant KB context into system prompt
+  let kbContextSection = "";
+  const bodyForKb = (sessionCtx.BodyStripped ?? sessionCtx.Body ?? "").trim();
+  if (bodyForKb.length >= 10 && !bodyForKb.startsWith("/")) {
+    try {
+      const kbResult = queryKbForContext(bodyForKb, 5);
+      if (kbResult) {
+        kbContextSection = `--- RELEVANT KB CONTEXT ---\n${kbResult}`;
+      }
+    } catch {
+      // KB unavailable — skip silently
+    }
+  }
+
+  const extraSystemPrompt = [
+    inboundMetaPrompt,
+    groupChatContext,
+    groupIntro,
+    groupSystemPrompt,
+    kbContextSection,
+  ]
     .filter(Boolean)
     .join("\n\n");
   const baseBody = sessionCtx.BodyStripped ?? sessionCtx.Body ?? "";

@@ -4,6 +4,7 @@ import {
   resolveSessionAgentId,
   resolveAgentSkillsFilter,
 } from "../../agents/agent-scope.js";
+import { scheduleConversationLearning } from "../../agents/conversation-learner.js";
 import { resolveModelRefFromString } from "../../agents/model-selection.js";
 import {
   applyMultiBrainRouting,
@@ -454,6 +455,12 @@ export async function getReplyFromConfig(
     originatingThreadId: finalized.MessageThreadId,
     originatingSessionKey: sessionKey,
   });
+
+  // Fire-and-forget conversation learning — extract facts into KB (PAIOS)
+  const learningReplyText = Array.isArray(reply)
+    ? reply.map((r) => r.text ?? "").join("\n")
+    : (reply?.text ?? "");
+  scheduleConversationLearning(bodyStripped ?? "", learningReplyText, agentId);
 
   return reply;
 }

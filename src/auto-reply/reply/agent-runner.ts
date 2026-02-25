@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { lookupContextTokens } from "../../agents/context.js";
+import { scheduleConversationLearning } from "../../agents/conversation-learner.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { resolveModelAuthMode } from "../../agents/model-auth.js";
 import { isCliProvider } from "../../agents/model-selection.js";
@@ -540,6 +541,14 @@ export async function runReplyAgent(params: {
       workspaceDir: process.cwd(),
       reply: payloadArray,
     });
+
+    // Fire-and-forget conversation learning — extract facts into KB (PAIOS)
+    const learningReplyText = payloadArray.map((r) => r.text ?? "").join("\n");
+    scheduleConversationLearning(
+      effectiveCommandBody ?? "",
+      learningReplyText,
+      followupRun.run.agentId,
+    );
 
     // Drain any late tool/block deliveries before deciding there's "nothing to send".
     // Otherwise, a late typing trigger (e.g. from a tool callback) can outlive the run and
