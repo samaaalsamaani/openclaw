@@ -81,7 +81,7 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             limit: z.number().optional(),
           },
           async ({ query, type, limit }) => {
-            const results = kbEntities(query, type, limit ?? 10);
+            const results = await kbEntities(query, type, limit ?? 10);
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
@@ -153,7 +153,7 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
           "Multi-source smart query — searches articles, entities, decisions, playbooks, and contradictions",
           { query: z.string(), agent_type: z.string().optional(), limit: z.number().optional() },
           async ({ query, agent_type, limit }) => {
-            const results = kbSmartQuery(query, agent_type, limit ?? 5);
+            const results = await kbSmartQuery(query, agent_type, limit ?? 5);
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
@@ -303,6 +303,7 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let kbDb: any;
+let kbVecAvailable = false;
 
 function openKbDb() {
   const path = require("node:path");
@@ -324,6 +325,18 @@ function openKbDb() {
   const Database = require("better-sqlite3");
   const db = new Database(DB_PATH, { readonly: true });
   db.pragma("busy_timeout = 5000");
+
+  // Try to load sqlite-vec for vector search
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const sqliteVec = require("sqlite-vec");
+    sqliteVec.load(db);
+    kbVecAvailable = true;
+    log.info("sqlite-vec loaded for KB vector search");
+  } catch {
+    log.info("sqlite-vec not available — KB uses FTS-only search");
+  }
+
   return db;
 }
 
@@ -332,6 +345,75 @@ function getKbDb() {
     kbDb = openKbDb();
   }
   return kbDb;
+}
+
+const EMBEDDING_SERVER = "http://127.0.0.1:11435";
+
+async function getQueryEmbedding(text: string): Promise<Buffer | null> {
+  if (!text || text.trim().length === 0) {
+    return null;
+  }
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(`${EMBEDDING_SERVER}/v1/embeddings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ input: text, task_type: "search_query" }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!response.ok) {
+      return null;
+    }
+    const data = (await response.json()) as {
+      data?: Array<{ embedding?: number[] }>;
+    };
+    const embedding = data.data?.[0]?.embedding;
+    if (!embedding || embedding.length !== 768) {
+      return null;
+    }
+    return Buffer.from(new Float32Array(embedding).buffer);
+  } catch {
+    return null;
+  }
+}
+
+function vecEntitySearch(
+  db: ReturnType<typeof getKbDb>,
+  queryEmbedding: Buffer,
+  fetchLimit: number,
+  typeFilter?: string[],
+) {
+  if (!kbVecAvailable) {
+    return [];
+  }
+  try {
+    const rows = db
+      .prepare(
+        `SELECT v.rowid as id, v.distance,
+                e.name, e.canonical_name, e.type, e.description,
+                e.mention_count, e.confidence, e.centrality_score, e.community_id
+         FROM vec_entities v
+         JOIN entities e ON e.id = v.rowid
+         WHERE v.embedding MATCH ? AND k = ?
+         ORDER BY v.distance`,
+      )
+      .all(new Float32Array(queryEmbedding.buffer), fetchLimit * 2);
+    let filtered = rows;
+    if (typeFilter && typeFilter.length > 0) {
+      filtered = rows.filter((r: { type: string }) => typeFilter.includes(r.type));
+    }
+    return filtered.slice(0, fetchLimit).map((r: Record<string, unknown>) => {
+      const { distance, ...clean } = r;
+      return {
+        ...clean,
+        similarity: Math.round(Math.max(0, 1 - ((distance as number) || 0)) * 1000) / 1000,
+      };
+    });
+  } catch {
+    return [];
+  }
 }
 
 function safeCount(db: ReturnType<typeof getKbDb>, sql: string): number {
@@ -415,7 +497,7 @@ function kbStats() {
   };
 }
 
-function kbEntities(query: string | undefined, type: string | undefined, limit: number) {
+async function kbEntities(query: string | undefined, type: string | undefined, limit: number) {
   const db = getKbDb();
   const safeLimit = Math.max(1, Math.min(limit, 100));
   const conditions: string[] = [];
@@ -431,13 +513,32 @@ function kbEntities(query: string | undefined, type: string | undefined, limit: 
   }
 
   const where = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
-  return db
+  const likeResults = db
     .prepare(
       `SELECT e.id, e.name, e.canonical_name, e.type, e.description, e.mention_count, e.confidence
        FROM entities e ${where}
        ORDER BY e.mention_count DESC LIMIT ?`,
     )
     .all(...params, safeLimit);
+
+  // Semantic vector search for entities
+  if (query && kbVecAvailable) {
+    const embedding = await getQueryEmbedding(query);
+    if (embedding) {
+      const typeFilter = type ? [type] : undefined;
+      const vecResults = vecEntitySearch(db, embedding, safeLimit, typeFilter);
+      const seenIds = new Set(likeResults.map((r: { id: number }) => r.id));
+      for (const vr of vecResults) {
+        if (!seenIds.has(vr.id as number)) {
+          likeResults.push(vr);
+          seenIds.add(vr.id as number);
+        }
+      }
+      return likeResults.slice(0, safeLimit);
+    }
+  }
+
+  return likeResults;
 }
 
 function kbGraph(
@@ -617,7 +718,7 @@ function kbCommunities(communityId: number | undefined, limit: number) {
   return db.prepare("SELECT * FROM communities ORDER BY entity_count DESC LIMIT ?").all(safeLimit);
 }
 
-function kbSmartQuery(query: string, agentType: string | undefined, limit: number) {
+async function kbSmartQuery(query: string, agentType: string | undefined, limit: number) {
   const db = getKbDb();
   const safeLimit = Math.max(1, Math.min(limit, 10));
   const safeQuery = query.replace(/[^\p{L}\p{N}\s]/gu, " ");
@@ -646,16 +747,33 @@ function kbSmartQuery(query: string, agentType: string | undefined, limit: numbe
       .all(safeQuery, safeLimit);
   } catch {}
 
-  // Search entities (use sanitized query for LIKE safety)
+  // Search entities — hybrid: LIKE + vec semantic
   let entities: unknown[] = [];
   try {
+    // LIKE-based name/description search
     entities = db
       .prepare(
-        `SELECT id, name, type, description FROM entities
+        `SELECT id, name, type, description, mention_count, centrality_score FROM entities
          WHERE name LIKE ? OR description LIKE ?
          ORDER BY mention_count DESC LIMIT ?`,
       )
       .all(`%${safeQuery}%`, `%${safeQuery}%`, safeLimit);
+
+    // Semantic entity search via vec_entities
+    if (kbVecAvailable) {
+      const entityEmbedding = await getQueryEmbedding(query);
+      if (entityEmbedding) {
+        const vecEntities = vecEntitySearch(db, entityEmbedding, safeLimit);
+        const seenIds = new Set((entities as Array<{ id: number }>).map((e) => e.id));
+        for (const ve of vecEntities) {
+          if (!seenIds.has(ve.id as number)) {
+            entities.push(ve);
+            seenIds.add(ve.id as number);
+          }
+        }
+        entities = entities.slice(0, safeLimit);
+      }
+    }
   } catch {}
 
   // Search decisions
