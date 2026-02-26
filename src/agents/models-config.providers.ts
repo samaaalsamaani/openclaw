@@ -2,10 +2,6 @@ import type { OpenClawConfig } from "../config/config.js";
 import type { ModelDefinitionConfig } from "../config/types.models.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
-  DEFAULT_COPILOT_API_BASE_URL,
-  resolveCopilotApiToken,
-} from "../providers/github-copilot-token.js";
-import {
   KILOCODE_BASE_URL,
   KILOCODE_DEFAULT_CONTEXT_WINDOW,
   KILOCODE_DEFAULT_COST,
@@ -1014,16 +1010,19 @@ export async function resolveImplicitCopilotProvider(params: {
     }
   }
 
-  let baseUrl = DEFAULT_COPILOT_API_BASE_URL;
+  let baseUrl = "https://api.individual.githubcopilot.com";
   if (selectedGithubToken) {
     try {
+      // Lazy-import to break a circular chunk dependency in the bundled output.
+      // (models-config.providers → github-copilot-token ↔ reply chunk cycle)
+      const { resolveCopilotApiToken } = await import("../providers/github-copilot-token.js");
       const token = await resolveCopilotApiToken({
         githubToken: selectedGithubToken,
         env,
       });
       baseUrl = token.baseUrl;
     } catch {
-      baseUrl = DEFAULT_COPILOT_API_BASE_URL;
+      baseUrl = "https://api.individual.githubcopilot.com";
     }
   }
 
