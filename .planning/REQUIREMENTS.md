@@ -222,9 +222,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ### Service Reliability (SERV)
 
-- [ ] **SERV-01**: Gateway runs 7+ days without crash, hang, or restart
+- [x] **SERV-01**: Gateway runs 7+ days without crash, hang, or restart
 - [ ] **SERV-02**: All 6 launchd services start successfully on boot and stay running
-- [ ] **SERV-03**: MCP servers handle 1000+ consecutive calls without crashing
+- [x] **SERV-03**: MCP servers handle 1000+ consecutive calls without crashing
 - [ ] **SERV-04**: Embedding server processes requests without memory leaks or timeouts
 - [ ] **SERV-05**: File watcher monitors directories without missing events or dying
 - [ ] **SERV-06**: Heartbeat tasks (daily/weekly) execute successfully on schedule
@@ -279,47 +279,47 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ## v3.0 Traceability
 
-| Requirement | Phase                                    | Status  |
-| ----------- | ---------------------------------------- | ------- |
-| SERV-01     | Phase 16: Service Hardening              | Pending |
-| SERV-02     | Phase 16: Service Hardening              | Pending |
-| SERV-03     | Phase 16: Service Hardening              | Pending |
-| SERV-04     | Phase 16: Service Hardening              | Pending |
-| SERV-05     | Phase 16: Service Hardening              | Pending |
-| SERV-06     | Phase 16: Service Hardening              | Pending |
-| INTEG-01    | Phase 17: Integration Reliability        | Pending |
-| INTEG-02    | Phase 17: Integration Reliability        | Pending |
-| INTEG-03    | Phase 17: Integration Reliability        | Pending |
-| INTEG-04    | Phase 17: Integration Reliability        | Pending |
-| INTEG-05    | Phase 17: Integration Reliability        | Pending |
-| INTEG-06    | Phase 17: Integration Reliability        | Pending |
-| DATA-01     | Phase 18: Data Integrity & Config Safety | Pending |
-| DATA-02     | Phase 18: Data Integrity & Config Safety | Pending |
-| DATA-03     | Phase 18: Data Integrity & Config Safety | Pending |
-| DATA-04     | Phase 18: Data Integrity & Config Safety | Pending |
-| DATA-05     | Phase 18: Data Integrity & Config Safety | Pending |
-| DATA-06     | Phase 18: Data Integrity & Config Safety | Pending |
-| DATA-07     | Phase 18: Data Integrity & Config Safety | Pending |
-| OBS-01      | Phase 19: Monitoring & Alerting          | Pending |
-| OBS-02      | Phase 19: Monitoring & Alerting          | Pending |
-| OBS-03      | Phase 19: Monitoring & Alerting          | Pending |
-| OBS-04      | Phase 19: Monitoring & Alerting          | Pending |
-| OBS-05      | Phase 19: Monitoring & Alerting          | Pending |
-| OBS-06      | Phase 19: Monitoring & Alerting          | Pending |
-| OBS-07      | Phase 19: Monitoring & Alerting          | Pending |
-| REC-01      | Phase 20: Recovery & Runbooks            | Pending |
-| REC-02      | Phase 20: Recovery & Runbooks            | Pending |
-| REC-03      | Phase 20: Recovery & Runbooks            | Pending |
-| REC-04      | Phase 20: Recovery & Runbooks            | Pending |
-| REC-05      | Phase 20: Recovery & Runbooks            | Pending |
-| REC-06      | Phase 20: Recovery & Runbooks            | Pending |
-| CHANGE-01   | Phase 21: Change Management              | Pending |
-| CHANGE-02   | Phase 21: Change Management              | Pending |
-| CHANGE-03   | Phase 21: Change Management              | Pending |
-| CHANGE-04   | Phase 21: Change Management              | Pending |
-| CHANGE-05   | Phase 21: Change Management              | Pending |
-| CHANGE-06   | Phase 21: Change Management              | Pending |
-| CHANGE-07   | Phase 21: Change Management              | Pending |
+| Requirement | Phase                                    | Status   |
+| ----------- | ---------------------------------------- | -------- |
+| SERV-01     | Phase 16: Service Hardening              | Complete |
+| SERV-02     | Phase 16: Service Hardening              | Pending  |
+| SERV-03     | Phase 16: Service Hardening              | Complete |
+| SERV-04     | Phase 16: Service Hardening              | Pending  |
+| SERV-05     | Phase 16: Service Hardening              | Pending  |
+| SERV-06     | Phase 16: Service Hardening              | Pending  |
+| INTEG-01    | Phase 17: Integration Reliability        | Pending  |
+| INTEG-02    | Phase 17: Integration Reliability        | Pending  |
+| INTEG-03    | Phase 17: Integration Reliability        | Pending  |
+| INTEG-04    | Phase 17: Integration Reliability        | Pending  |
+| INTEG-05    | Phase 17: Integration Reliability        | Pending  |
+| INTEG-06    | Phase 17: Integration Reliability        | Pending  |
+| DATA-01     | Phase 18: Data Integrity & Config Safety | Pending  |
+| DATA-02     | Phase 18: Data Integrity & Config Safety | Pending  |
+| DATA-03     | Phase 18: Data Integrity & Config Safety | Pending  |
+| DATA-04     | Phase 18: Data Integrity & Config Safety | Pending  |
+| DATA-05     | Phase 18: Data Integrity & Config Safety | Pending  |
+| DATA-06     | Phase 18: Data Integrity & Config Safety | Pending  |
+| DATA-07     | Phase 18: Data Integrity & Config Safety | Pending  |
+| OBS-01      | Phase 19: Monitoring & Alerting          | Pending  |
+| OBS-02      | Phase 19: Monitoring & Alerting          | Pending  |
+| OBS-03      | Phase 19: Monitoring & Alerting          | Pending  |
+| OBS-04      | Phase 19: Monitoring & Alerting          | Pending  |
+| OBS-05      | Phase 19: Monitoring & Alerting          | Pending  |
+| OBS-06      | Phase 19: Monitoring & Alerting          | Pending  |
+| OBS-07      | Phase 19: Monitoring & Alerting          | Pending  |
+| REC-01      | Phase 20: Recovery & Runbooks            | Pending  |
+| REC-02      | Phase 20: Recovery & Runbooks            | Pending  |
+| REC-03      | Phase 20: Recovery & Runbooks            | Pending  |
+| REC-04      | Phase 20: Recovery & Runbooks            | Pending  |
+| REC-05      | Phase 20: Recovery & Runbooks            | Pending  |
+| REC-06      | Phase 20: Recovery & Runbooks            | Pending  |
+| CHANGE-01   | Phase 21: Change Management              | Pending  |
+| CHANGE-02   | Phase 21: Change Management              | Pending  |
+| CHANGE-03   | Phase 21: Change Management              | Pending  |
+| CHANGE-04   | Phase 21: Change Management              | Pending  |
+| CHANGE-05   | Phase 21: Change Management              | Pending  |
+| CHANGE-06   | Phase 21: Change Management              | Pending  |
+| CHANGE-07   | Phase 21: Change Management              | Pending  |
 
 **v3.0 Coverage:**
 
