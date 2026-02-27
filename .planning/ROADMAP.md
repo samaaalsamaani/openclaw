@@ -50,7 +50,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Milestone Goal:** Transform PAIOS from fragile prototype to production-grade system. Eliminate crashes, prevent regressions, catch all failures, enable safe changes.
 
-- [ ] **Phase 16: Service Hardening** - Make all services stable and resilient to failures
+- [x] **Phase 16: Service Hardening** - Make all services stable and resilient to failures (completed 2026-02-27)
 - [ ] **Phase 17: Integration Reliability** - Eliminate cross-system communication failures
 - [ ] **Phase 18: Data Integrity & Config Safety** - Prevent corruption and credential issues
 - [ ] **Phase 19: Monitoring & Alerting** - Detect all failures immediately
@@ -506,7 +506,7 @@ Plans:
 | 13. Unified CLI                    | 2/2            | Complete    | 2026-02-22 |
 | 14. Agent Teams                    | 3/3            | Complete    | 2026-02-22 |
 | 15. Dashboard & Self-Reflection    | 2/2            | Complete    | 2026-02-22 |
-| 16. Service Hardening              | 3/4            | In Progress |            |
+| 16. Service Hardening              | 4/4            | Complete    | 2026-02-27 |
 | 17. Integration Reliability        | 0/3            | Not started | -          |
 | 18. Data Integrity & Config Safety | 0/3            | Not started | -          |
 | 19. Monitoring & Alerting          | 0/3            | Not started | -          |
