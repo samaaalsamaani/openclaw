@@ -406,9 +406,9 @@ Plans:
 
 Plans:
 
-- [ ] 18-01: Enable WAL mode for all SQLite databases and verify busy_timeout settings
-- [ ] 18-02: Add config validation before load and fix Gateway shutdown rewrite bug
-- [ ] 18-03: Implement credential refresh automation and remove placeholder database files
+- [ ] 18-01-PLAN.md — Universal database initialization with WAL + config validation with backup restore (Wave 1)
+- [ ] 18-02-PLAN.md — Daily credential monitoring, OAuth refresh automation, expiresAt tracking (Wave 2)
+- [ ] 18-03-PLAN.md — Placeholder cleanup script, remove plist fallback from load-env.sh (Wave 3)
 
 ### Phase 19: Monitoring & Alerting
 
@@ -507,7 +507,7 @@ Plans:
 | 14. Agent Teams                    | 3/3            | Complete    | 2026-02-22 |
 | 15. Dashboard & Self-Reflection    | 2/2            | Complete    | 2026-02-22 |
 | 16. Service Hardening              | 4/4            | Complete    | 2026-02-27 |
-| 17. Integration Reliability        | 3/3 | Complete   | 2026-02-27 |
+| 17. Integration Reliability        | 3/3            | Complete    | 2026-02-27 |
 | 18. Data Integrity & Config Safety | 0/3            | Not started | -          |
 | 19. Monitoring & Alerting          | 0/3            | Not started | -          |
 | 20. Recovery & Runbooks            | 0/3            | Not started | -          |
