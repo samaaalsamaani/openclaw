@@ -367,7 +367,7 @@ Plans:
 - [x] 16-00-PLAN.md — Test scaffolds for infrastructure modules (crash logger, memory monitor, circuit breaker)
 - [x] 16-01-PLAN.md — Error handling, crash recovery logging, MCP error boundaries
 - [x] 16-02-PLAN.md — Memory leak detection, circuit breakers, embedding server recycling
-- [ ] 16-03-PLAN.md — launchd hardening (KeepAlive, ThrottleInterval, ExitTimeout, logging)
+- [x] 16-03-PLAN.md — launchd hardening (KeepAlive, ThrottleInterval, ExitTimeout, logging)
 
 ### Phase 17: Integration Reliability
 
@@ -383,11 +383,11 @@ Plans:
 5. Codex subprocess calls have proper timeout, error handling, and process cleanup
 6. MCP server errors are caught, logged to observability.sqlite, and don't cascade to callers
 
-Plans:
+**Plans:** 3 plans in 2 waves
 
-- [ ] 17-01: Fix Agent SDK ARG_MAX issues and implement automatic temp file fallback
-- [ ] 17-02: Add retry logic and timeout handling for all MCP cross-calls
-- [ ] 17-03: Wrap all hooks in try/catch with error logging and graceful degradation
+- [ ] 17-01-PLAN.md — Retry logic with exponential backoff, timeout enforcement with AbortController (Wave 1)
+- [ ] 17-02-PLAN.md — ARG_MAX mitigation via temp files, SDK hardening with timeout/retry (Wave 2)
+- [ ] 17-03-PLAN.md — Hook error boundaries, MCP integration hardening (Wave 2)
 
 ### Phase 18: Data Integrity & Config Safety
 
