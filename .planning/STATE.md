@@ -5,10 +5,10 @@ milestone_name: System Reliability & Hardening
 status: unknown
 last_updated: "2026-02-27T17:35:40.517Z"
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 21
+  completed_phases: 16
+  total_plans: 50
+  completed_plans: 48
 ---
 
 # Project State
@@ -23,10 +23,10 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: 16 of 21 (Service Hardening)
-Plan: 4 of 4 complete (16-03-PLAN.md)
-Status: Complete
-Last activity: 2026-02-27 — Completed launchd hardening and MCP daemon infrastructure (partial - architectural blocker)
+Phase: 17 of 21 (Integration Reliability)
+Plan: 1 of 3 complete (17-01-PLAN.md)
+Status: In Progress
+Last activity: 2026-02-27 — Completed retry & timeout infrastructure with circuit breaker integration
 
 Progress: [███████████████░] 76% (16 of 21 phases complete)
 
@@ -65,6 +65,12 @@ v3.0 is NOT feature-building — pure stabilization:
 | P02  | 3     | 6     | 472s     |
 | P03  | 4     | 19    | 317s     |
 
+**Phase 17 Performance:**
+
+| Plan | Tasks | Files | Duration |
+| ---- | ----- | ----- | -------- |
+| P01  | 3     | 5     | 1119s    |
+
 ## Accumulated Context
 
 ### Decisions
@@ -90,6 +96,8 @@ Recent decisions from PROJECT.md:
 - [Phase 16 P03]: ProcessType=Background prevents blocking interactive tasks
 - [Phase 16 P03]: MCP stdio protocol incompatible with daemon architecture - requires TCP wrapper
 - [Phase 16 P03]: Session-scoped MCP servers with cleanup script is correct pattern
+- [Phase 17 P01]: Retry classification based on error type — Permanent errors (400, 401, 404) fail immediately, transient errors (ETIMEDOUT, 503, 504) use exponential backoff
+- [Phase 17 P01]: Skip observability logging in tests without better-sqlite3 — Graceful degradation when native bindings unavailable in test environment
 
 ### System Crisis Context
 
@@ -110,10 +118,10 @@ None yet.
 
 ### Blockers/Concerns
 
-None yet. Phase 16 ready to plan.
+None. Phase 17 Plan 01 complete.
 
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 16-03-PLAN.md (launchd hardening & MCP daemon infrastructure - partial completion due to architectural blocker)
-Resume file: Phase 16 complete - ready for Phase 17 planning
+Stopped at: Completed 17-01-PLAN.md (retry & timeout infrastructure with circuit breaker integration)
+Resume file: Ready for Phase 17 Plan 02

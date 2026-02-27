@@ -383,7 +383,7 @@ Plans:
 5. Codex subprocess calls have proper timeout, error handling, and process cleanup
 6. MCP server errors are caught, logged to observability.sqlite, and don't cascade to callers
 
-**Plans:** 3 plans in 2 waves
+**Plans:** 1/3 plans executed
 
 - [ ] 17-01-PLAN.md — Retry logic with exponential backoff, timeout enforcement with AbortController (Wave 1)
 - [ ] 17-02-PLAN.md — ARG_MAX mitigation via temp files, SDK hardening with timeout/retry (Wave 2)
@@ -507,7 +507,7 @@ Plans:
 | 14. Agent Teams                    | 3/3            | Complete    | 2026-02-22 |
 | 15. Dashboard & Self-Reflection    | 2/2            | Complete    | 2026-02-22 |
 | 16. Service Hardening              | 4/4            | Complete    | 2026-02-27 |
-| 17. Integration Reliability        | 0/3            | Not started | -          |
+| 17. Integration Reliability        | 1/3            | In Progress |            |
 | 18. Data Integrity & Config Safety | 0/3            | Not started | -          |
 | 19. Monitoring & Alerting          | 0/3            | Not started | -          |
 | 20. Recovery & Runbooks            | 0/3            | Not started | -          |
