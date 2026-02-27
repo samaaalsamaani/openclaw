@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import type { OAuthCredentials } from "@mariozechner/pi-ai";
+import { rotateConfigBackups } from "../../config/backup-rotation.js";
 import { resolveOAuthPath } from "../../config/paths.js";
 import { withFileLock } from "../../infra/file-lock.js";
 import { loadJsonFile, saveJsonFile } from "../../infra/json-file.js";
@@ -335,6 +336,17 @@ export function ensureAuthProfileStore(
 
 export function saveAuthProfileStore(store: AuthProfileStore, agentDir?: string): void {
   const authPath = resolveAuthStorePath(agentDir);
+
+  // Create backup before overwriting (best-effort, non-blocking)
+  if (fs.existsSync(authPath)) {
+    rotateConfigBackups(authPath, {
+      unlink: (path) => fs.promises.unlink(path),
+      rename: (from, to) => fs.promises.rename(from, to),
+    }).catch((err) => {
+      log.warn("failed to rotate auth-profiles backup", { err, authPath });
+    });
+  }
+
   const payload = {
     version: AUTH_STORE_VERSION,
     profiles: store.profiles,
