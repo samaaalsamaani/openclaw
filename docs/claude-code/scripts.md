@@ -184,8 +184,41 @@ Validates MCP server connectivity and configuration.
 - Credential file paths
 - Claude Desktop process status
 
-## Future Enhancements
+### organize-skills.sh
 
-Planned operational tools (not yet implemented):
+Lists and categorizes all available skills.
 
-- `organize-skills.sh` - Skills organization and categorization
+**Location:** `~/.claude/scripts/organize-skills.sh`
+
+**Features:**
+
+- Categorizes skills by type (Git, GitHub, Testing, Documentation, etc.)
+- Lists all skills alphabetically
+- Shows skill descriptions and file sizes
+- Checks for recent skill usage in session logs
+- Performs quality checks on skill files
+- Provides organization recommendations
+
+**Usage:**
+
+```bash
+~/.claude/scripts/organize-skills.sh
+```
+
+**Categories:**
+
+- Git (commit-related skills)
+- GitHub (PR, review skills)
+- Testing (test-related skills)
+- Documentation (docs skills)
+- Deployment (deploy skills)
+- Debugging (debug skills)
+- Refactoring (refactor skills)
+- Operations (health, mintlify, verify)
+- General (all others)
+
+**Quality checks:**
+
+- Minimum content length (5+ lines)
+- Proper markdown heading
+- File readability
