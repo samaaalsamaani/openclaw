@@ -15,6 +15,12 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { createSubsystemLogger } from "../logging/subsystem.js";
+import {
+  getConfidenceThreshold,
+  getDomainScoring,
+  loadLlmConfig,
+  resolveRoutingDomain,
+} from "./llm-config-reader.js";
 
 const log = createSubsystemLogger("routing/classifier");
 
@@ -495,13 +501,13 @@ const USER_OVERRIDE_PATTERNS: OverridePattern[] = [
   {
     pattern: /\bask\s+sonnet\b/i,
     provider: "anthropic",
-    model: "claude-sonnet-4-5",
+    model: "claude-sonnet-4-6",
     label: "Claude Sonnet",
   },
   {
     pattern: /\buse\s+sonnet\b/i,
     provider: "anthropic",
-    model: "claude-sonnet-4-5",
+    model: "claude-sonnet-4-6",
     label: "Claude Sonnet",
   },
   {
@@ -546,7 +552,7 @@ const USER_OVERRIDE_PATTERNS: OverridePattern[] = [
 
 // ── Routing table (domain → provider/model) ─────────────────────────
 
-const ROUTING_TABLE: Record<TaskDomain, { provider: string; model: string }> = {
+const HARDCODED_ROUTING_TABLE: Record<TaskDomain, { provider: string; model: string }> = {
   code: { provider: "openai-codex", model: "gpt-5.3-codex" },
   creative: { provider: "anthropic", model: "claude-opus-4-6" },
   analysis: { provider: "anthropic", model: "claude-sonnet-4-6" },
@@ -557,14 +563,84 @@ const ROUTING_TABLE: Record<TaskDomain, { provider: string; model: string }> = {
 };
 
 /** Default when confidence is below threshold */
-const DEFAULT_ROUTE = { provider: "anthropic", model: "claude-sonnet-4-6" };
-const CONFIDENCE_THRESHOLD = 70;
+const HARDCODED_DEFAULT_ROUTE = { provider: "anthropic", model: "claude-sonnet-4-6" };
+const HARDCODED_CONFIDENCE_THRESHOLD = 70;
+
+function buildRoutingTable(): Record<TaskDomain, { provider: string; model: string }> {
+  const config = loadLlmConfig();
+  if (!config) {
+    return HARDCODED_ROUTING_TABLE;
+  }
+  const ALL: TaskDomain[] = [
+    "code",
+    "creative",
+    "analysis",
+    "search",
+    "vision",
+    "system",
+    "schedule",
+  ];
+  const result = { ...HARDCODED_ROUTING_TABLE };
+  for (const domain of ALL) {
+    const resolved = resolveRoutingDomain(config, domain);
+    if (resolved) {
+      result[domain] = { provider: resolved.provider, model: resolved.model };
+    }
+  }
+  return result;
+}
+
+function buildDefaultRoute(): { provider: string; model: string } {
+  const config = loadLlmConfig();
+  if (!config?.routing?.default) {
+    return HARDCODED_DEFAULT_ROUTE;
+  }
+  // Resolve the routing default — try "analysis" domain first (that's the hardcoded default domain)
+  const resolved = resolveRoutingDomain(config, "analysis");
+  if (resolved) {
+    return { provider: resolved.provider, model: resolved.model };
+  }
+  return HARDCODED_DEFAULT_ROUTE;
+}
+
+function buildConfidenceThreshold(): number {
+  const config = loadLlmConfig();
+  if (!config) {
+    return HARDCODED_CONFIDENCE_THRESHOLD;
+  }
+  return getConfidenceThreshold(config) ?? HARDCODED_CONFIDENCE_THRESHOLD;
+}
+
+const ROUTING_TABLE: Record<TaskDomain, { provider: string; model: string }> = buildRoutingTable();
+const DEFAULT_ROUTE = buildDefaultRoute();
+const CONFIDENCE_THRESHOLD = buildConfidenceThreshold();
 
 // ── Dynamic routing weights (loaded from optimize.js output) ────────
 
 export let dynamicConfidenceThreshold = CONFIDENCE_THRESHOLD;
 
 function applyRoutingWeights(): void {
+  // Layer 1: Apply scoring weights from llm-config.json (if available)
+  const config = loadLlmConfig();
+  if (config) {
+    for (const rule of DOMAIN_RULES) {
+      const scoring = getDomainScoring(config, rule.domain);
+      if (scoring) {
+        if (typeof scoring.baseConfidence === "number") {
+          rule.baseConfidence = scoring.baseConfidence;
+        }
+        if (typeof scoring.keywordBoost === "number") {
+          rule.keywordBoost = scoring.keywordBoost;
+        }
+        if (typeof scoring.patternBoost === "number") {
+          rule.patternBoost = scoring.patternBoost;
+        }
+      }
+    }
+    log.debug("applied scoring weights from llm-config.json");
+  }
+
+  // Layer 2: Override with routing-weights.json (optimize.js output takes precedence)
   try {
     const weightsPath = join(process.env.HOME ?? "/tmp", ".openclaw", "routing-weights.json");
     if (!existsSync(weightsPath)) {
