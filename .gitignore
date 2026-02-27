@@ -114,3 +114,4 @@ dist/protocol.schema.json
 
 # Synthing
 **/.stfolder/
+.worktrees/
