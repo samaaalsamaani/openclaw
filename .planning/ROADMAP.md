@@ -51,7 +51,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Milestone Goal:** Transform PAIOS from fragile prototype to production-grade system. Eliminate crashes, prevent regressions, catch all failures, enable safe changes.
 
 - [x] **Phase 16: Service Hardening** - Make all services stable and resilient to failures (completed 2026-02-27)
-- [ ] **Phase 17: Integration Reliability** - Eliminate cross-system communication failures
+- [x] **Phase 17: Integration Reliability** - Eliminate cross-system communication failures (completed 2026-02-27)
 - [ ] **Phase 18: Data Integrity & Config Safety** - Prevent corruption and credential issues
 - [ ] **Phase 19: Monitoring & Alerting** - Detect all failures immediately
 - [ ] **Phase 20: Recovery & Runbooks** - Document procedures for every component
@@ -383,7 +383,7 @@ Plans:
 5. Codex subprocess calls have proper timeout, error handling, and process cleanup
 6. MCP server errors are caught, logged to observability.sqlite, and don't cascade to callers
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 - [ ] 17-01-PLAN.md — Retry logic with exponential backoff, timeout enforcement with AbortController (Wave 1)
 - [ ] 17-02-PLAN.md — ARG_MAX mitigation via temp files, SDK hardening with timeout/retry (Wave 2)
@@ -507,7 +507,7 @@ Plans:
 | 14. Agent Teams                    | 3/3            | Complete    | 2026-02-22 |
 | 15. Dashboard & Self-Reflection    | 2/2            | Complete    | 2026-02-22 |
 | 16. Service Hardening              | 4/4            | Complete    | 2026-02-27 |
-| 17. Integration Reliability        | 2/3            | In Progress |            |
+| 17. Integration Reliability        | 3/3 | Complete   | 2026-02-27 |
 | 18. Data Integrity & Config Safety | 0/3            | Not started | -          |
 | 19. Monitoring & Alerting          | 0/3            | Not started | -          |
 | 20. Recovery & Runbooks            | 0/3            | Not started | -          |
