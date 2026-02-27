@@ -125,10 +125,38 @@ Configuration templates are available in `~/.claude/config-templates/`:
 
 See the templates README for usage instructions and best practices.
 
+### monitor-hooks.sh
+
+Monitors hook execution and performance.
+
+**Location:** `~/.claude/scripts/monitor-hooks.sh`
+
+**Features:**
+
+- Analyzes hook execution from logs and configuration
+- Checks hook scripts for error handling
+- Detects blocking operations (sleep, HTTP without timeout)
+- Shows configured hooks from settings.json
+- Reports background execution usage
+- Provides performance recommendations
+
+**Usage:**
+
+```bash
+~/.claude/scripts/monitor-hooks.sh
+```
+
+**Checks performed:**
+
+- Hook script modification times
+- Error handling presence (`set -e`)
+- Blocking operations (sleep, curl without timeout)
+- Background execution patterns
+- Hook count and consolidation opportunities
+
 ## Future Enhancements
 
 Planned operational tools (not yet implemented):
 
-- `monitor-hooks.sh` - Hook performance monitoring
 - `check-mcp-servers.sh` - MCP server health checks
 - `organize-skills.sh` - Skills organization and categorization
