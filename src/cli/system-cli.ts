@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import { danger } from "../globals.js";
+import { renderDashboard } from "../infra/status-dashboard.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
@@ -129,4 +130,29 @@ export function registerSystemCli(program: Command) {
       });
     });
   });
+
+  system
+    .command("health")
+    .description("Display real-time PAIOS system health dashboard")
+    .addHelpText(
+      "after",
+      () =>
+        `
+Shows status of:
+  - Services (launchd processes)
+  - APIs (response codes and latency)
+  - Databases (connection + WAL mode)
+  - Recent errors (last 24 hours)
+  - Config validation status
+`,
+    )
+    .action(async () => {
+      try {
+        const dashboard = await renderDashboard();
+        defaultRuntime.log(dashboard);
+      } catch (err) {
+        defaultRuntime.error(danger(`Status check failed: ${String(err)}`));
+        defaultRuntime.exit(1);
+      }
+    });
 }
