@@ -19,6 +19,12 @@ echo "[daily-tasks] Checking credential expiry..."
     echo "[daily-tasks] WARNING: Credential check failed (non-blocking)"
 }
 
+# Run daily health check with alerting
+echo "[daily-tasks] Running health check and alert dispatch..."
+"$SCRIPT_DIR/daily-alert-check.sh" || {
+    echo "[daily-tasks] WARNING: Daily alert check failed (non-blocking)"
+}
+
 # Add additional daily tasks here as needed
 # Examples:
 # - Daily KB backup
