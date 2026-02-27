@@ -154,9 +154,38 @@ Monitors hook execution and performance.
 - Background execution patterns
 - Hook count and consolidation opportunities
 
+### check-mcp-servers.sh
+
+Validates MCP server connectivity and configuration.
+
+**Location:** `~/.claude/scripts/check-mcp-servers.sh`
+
+**Features:**
+
+- Validates MCP configuration JSON syntax
+- Lists all configured MCP servers
+- Checks if server commands are available
+- Validates environment variables and paths
+- Tests server-specific requirements (npx, credentials)
+- Shows Claude Desktop running status
+
+**Usage:**
+
+```bash
+~/.claude/scripts/check-mcp-servers.sh
+```
+
+**Checks performed:**
+
+- MCP config file exists at `~/.config/claude/claude_desktop_config.json`
+- JSON syntax validation
+- Command availability (npx, node, python, etc.)
+- Environment variable resolution
+- Credential file paths
+- Claude Desktop process status
+
 ## Future Enhancements
 
 Planned operational tools (not yet implemented):
 
-- `check-mcp-servers.sh` - MCP server health checks
 - `organize-skills.sh` - Skills organization and categorization
