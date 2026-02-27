@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: System Reliability & Hardening
 status: unknown
-last_updated: "2026-02-27T17:35:40.517Z"
+last_updated: "2026-02-27T19:02:38.826Z"
 progress:
-  total_phases: 21
-  completed_phases: 16
-  total_plans: 50
-  completed_plans: 48
+  total_phases: 2
+  completed_phases: 1
+  total_plans: 7
+  completed_plans: 6
 ---
 
 # Project State
@@ -24,9 +24,9 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 17 of 21 (Integration Reliability)
-Plan: 1 of 3 complete (17-01-PLAN.md)
+Plan: 2 of 3 complete (17-03-PLAN.md)
 Status: In Progress
-Last activity: 2026-02-27 — Completed retry & timeout infrastructure with circuit breaker integration
+Last activity: 2026-02-27 — Completed hook & MCP error boundaries with observability logging
 
 Progress: [███████████████░] 76% (16 of 21 phases complete)
 
@@ -70,6 +70,7 @@ v3.0 is NOT feature-building — pure stabilization:
 | Plan | Tasks | Files | Duration |
 | ---- | ----- | ----- | -------- |
 | P01  | 3     | 5     | 1119s    |
+| P03  | 3     | 5     | 259s     |
 
 ## Accumulated Context
 
@@ -98,6 +99,10 @@ Recent decisions from PROJECT.md:
 - [Phase 16 P03]: Session-scoped MCP servers with cleanup script is correct pattern
 - [Phase 17 P01]: Retry classification based on error type — Permanent errors (400, 401, 404) fail immediately, transient errors (ETIMEDOUT, 503, 504) use exponential backoff
 - [Phase 17 P01]: Skip observability logging in tests without better-sqlite3 — Graceful degradation when native bindings unavailable in test environment
+- [Phase 17]: Hook error boundaries wrap all handlers in try/catch, log to observability.sqlite, never throw to prevent Gateway crashes
+- [Phase 17]: MCP tools layered as withErrorBoundary → retryWithBackoff → callWithTimeout → operation for defense in depth
+- [Phase 17]: All KB tools share mcp-kb-server circuit breaker (fail together if KB unavailable)
+- [Phase 17]: Plugin hook system already has error boundaries via catchErrors: true (Phase 16), new hook-executor adds observability logging layer
 
 ### System Crisis Context
 
@@ -118,10 +123,10 @@ None yet.
 
 ### Blockers/Concerns
 
-None. Phase 17 Plan 01 complete.
+None. Phase 17 Plan 03 complete.
 
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 17-01-PLAN.md (retry & timeout infrastructure with circuit breaker integration)
-Resume file: Ready for Phase 17 Plan 02
+Stopped at: Completed 17-03-PLAN.md (hook & MCP error boundaries with observability logging)
+Resume file: Ready for next plan

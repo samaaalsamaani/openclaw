@@ -233,10 +233,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 - [x] **INTEG-01**: Gateway ↔ Claude SDK calls succeed 99%+ (no ARG_MAX, timeout, or parsing errors)
 - [x] **INTEG-02**: MCP cross-calls between CLIs work reliably (no connection drops or timeouts)
-- [ ] **INTEG-03**: Hooks (PreToolUse, PostToolUse, SessionStart) execute without crashing parent process
+- [x] **INTEG-03**: Hooks (PreToolUse, PostToolUse, SessionStart) execute without crashing parent process
 - [x] **INTEG-04**: Agent SDK handles long prompts (>10KB) without ARG_MAX errors
 - [ ] **INTEG-05**: Codex subprocess calls have proper error handling and cleanup
-- [ ] **INTEG-06**: MCP server errors are caught and logged (no silent failures)
+- [x] **INTEG-06**: MCP server errors are caught and logged (no silent failures)
 
 ### Data Integrity (DATA)
 
@@ -289,10 +289,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SERV-06     | Phase 16: Service Hardening              | Complete |
 | INTEG-01    | Phase 17: Integration Reliability        | Complete |
 | INTEG-02    | Phase 17: Integration Reliability        | Complete |
-| INTEG-03    | Phase 17: Integration Reliability        | Pending  |
+| INTEG-03    | Phase 17: Integration Reliability        | Complete |
 | INTEG-04    | Phase 17: Integration Reliability        | Complete |
 | INTEG-05    | Phase 17: Integration Reliability        | Pending  |
-| INTEG-06    | Phase 17: Integration Reliability        | Pending  |
+| INTEG-06    | Phase 17: Integration Reliability        | Complete |
 | DATA-01     | Phase 18: Data Integrity & Config Safety | Pending  |
 | DATA-02     | Phase 18: Data Integrity & Config Safety | Pending  |
 | DATA-03     | Phase 18: Data Integrity & Config Safety | Pending  |
