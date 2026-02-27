@@ -87,6 +87,8 @@ export function buildLaunchAgentPlist({
   stdoutPath,
   stderrPath,
   environment,
+  keepAlive = true,
+  startCalendarInterval,
 }: {
   label: string;
   comment?: string;
@@ -95,6 +97,8 @@ export function buildLaunchAgentPlist({
   stdoutPath: string;
   stderrPath: string;
   environment?: Record<string, string | undefined>;
+  keepAlive?: boolean | { SuccessfulExit: boolean };
+  startCalendarInterval?: { Hour: number; Minute: number };
 }): string {
   const argsXml = programArguments
     .map((arg) => `\n      <string>${plistEscape(arg)}</string>`)
@@ -106,5 +110,27 @@ export function buildLaunchAgentPlist({
     ? `\n    <key>Comment</key>\n    <string>${plistEscape(comment.trim())}</string>`
     : "";
   const envXml = renderEnvDict(environment);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n  <dict>\n    <key>Label</key>\n    <string>${plistEscape(label)}</string>\n    ${commentXml}\n    <key>RunAtLoad</key>\n    <true/>\n    <key>KeepAlive</key>\n    <true/>\n    <key>ProgramArguments</key>\n    <array>${argsXml}\n    </array>\n    ${workingDirXml}\n    <key>StandardOutPath</key>\n    <string>${plistEscape(stdoutPath)}</string>\n    <key>StandardErrorPath</key>\n    <string>${plistEscape(stderrPath)}</string>${envXml}\n  </dict>\n</plist>\n`;
+
+  // Production hardening: KeepAlive with SuccessfulExit=false (restart on crash, not on clean exit)
+  // For calendar services, omit KeepAlive (conflicts with StartCalendarInterval)
+  let keepAliveXml = "";
+  if (!startCalendarInterval) {
+    if (typeof keepAlive === "boolean") {
+      keepAliveXml = keepAlive
+        ? `\n    <key>KeepAlive</key>\n    <dict>\n      <key>SuccessfulExit</key>\n      <false/>\n    </dict>`
+        : "";
+    } else {
+      keepAliveXml = `\n    <key>KeepAlive</key>\n    <dict>\n      <key>SuccessfulExit</key>\n      <${keepAlive.SuccessfulExit ? "true" : "false"}/>\n    </dict>`;
+    }
+  }
+
+  // Calendar interval for scheduled tasks (daily/weekly)
+  const calendarXml = startCalendarInterval
+    ? `\n    <key>StartCalendarInterval</key>\n    <dict>\n      <key>Hour</key>\n      <integer>${startCalendarInterval.Hour}</integer>\n      <key>Minute</key>\n      <integer>${startCalendarInterval.Minute}</integer>\n    </dict>`
+    : "";
+
+  // Production hardening settings
+  const hardeningXml = `\n    <key>ThrottleInterval</key>\n    <integer>10</integer>\n    <key>ExitTimeOut</key>\n    <integer>30</integer>\n    <key>ProcessType</key>\n    <string>Background</string>`;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n  <dict>\n    <key>Label</key>\n    <string>${plistEscape(label)}</string>${commentXml}\n    <key>RunAtLoad</key>\n    <true/>${keepAliveXml}${calendarXml}\n    <key>ProgramArguments</key>\n    <array>${argsXml}\n    </array>${workingDirXml}\n    <key>StandardOutPath</key>\n    <string>${plistEscape(stdoutPath)}</string>\n    <key>StandardErrorPath</key>\n    <string>${plistEscape(stderrPath)}</string>${hardeningXml}${envXml}\n  </dict>\n</plist>\n`;
 }
