@@ -1,10 +1,11 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
-import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
+import path from "path";
 import JSON5 from "json5";
 import { ensureOwnerDisplaySecret } from "../agents/owner-display.js";
+import { OpenClawConfigSchema } from "../infra/config-validator.js";
 import { loadDotEnv } from "../infra/dotenv.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import {
@@ -660,6 +661,22 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       }
       const raw = deps.fs.readFileSync(configPath, "utf-8");
       const parsed = deps.json5.parse(raw);
+
+      // Early validation: ensure parsed config is a valid object structure
+      // This catches basic corruption (non-objects, arrays, null) before complex processing
+      const earlyValidation = OpenClawConfigSchema.safeParse(parsed);
+      if (!earlyValidation.success) {
+        const errorMessage =
+          earlyValidation.error && "errors" in earlyValidation.error
+            ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (earlyValidation.error.errors as any[])[0]?.message
+            : undefined;
+        deps.logger.error(
+          `Config file ${configPath} failed basic structure validation: ${errorMessage ?? "invalid structure"}`,
+        );
+        return {};
+      }
+
       const { resolvedConfigRaw: resolvedConfig } = resolveConfigForRead(
         resolveConfigIncludesForRead(parsed, configPath, deps),
         deps.env,

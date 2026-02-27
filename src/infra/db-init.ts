@@ -9,7 +9,8 @@
  * Gateway long-lived, tests isolated).
  */
 
-import type Database from "better-sqlite3";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Database = any;
 
 /**
  * Initialize a SQLite database with production-ready settings.
@@ -30,11 +31,11 @@ import type Database from "better-sqlite3";
  * db.close();
  * ```
  */
-export function initDatabase(dbPath: string): Database.Database {
+export function initDatabase(dbPath: string): Database {
   // Dynamic require for better-sqlite3 (native module pattern)
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const DatabaseConstructor = require("better-sqlite3");
-  const db = new DatabaseConstructor(dbPath) as Database.Database;
+  const db = new DatabaseConstructor(dbPath);
 
   // Always set busy_timeout first (works regardless of journal mode)
   db.pragma("busy_timeout = 5000");

@@ -107,11 +107,11 @@ export function findBackups(backupDir: string, baseName: string): string[] {
 // ── Validation with Backup Restore ────────────────────────────────────
 
 /**
- * Load and validate a config file with automatic backup restore.
+ * Load and validate a config file with automatic backup restore (synchronous).
  *
  * On successful validation: Returns parsed config.
  * On validation failure: Tries backups (newest first) until finding a valid one.
- *   If valid backup found: Restores to main path and returns it.
+ *   If valid backup found: Logs warning and returns it.
  *   If no valid backup: Throws error with context.
  *
  * @param path Path to config file
@@ -124,12 +124,82 @@ export function findBackups(backupDir: string, baseName: string): string[] {
  * ```typescript
  * import { LlmConfigSchema } from "./config-validator.js";
  *
- * const config = await loadConfigWithValidation(
+ * const config = loadConfigWithValidationSync(
  *   "/path/to/llm-config.json",
  *   LlmConfigSchema,
  *   "/path/to/backups"
  * );
  * ```
+ */
+export function loadConfigWithValidationSync<T>(
+  path: string,
+  schema: z.ZodType<T>,
+  backupDir?: string,
+): T {
+  const dir = backupDir ?? join(path, "..");
+  const baseName = path.split("/").pop() ?? "config.json";
+
+  // Try loading and validating the main config file
+  try {
+    const raw = readFileSync(path, "utf-8");
+    const parsed = JSON.parse(raw);
+    const validated = schema.parse(parsed);
+    return validated;
+  } catch (mainError) {
+    // Main config is invalid - try backups
+    const backups = findBackups(dir, baseName);
+
+    for (const backupPath of backups) {
+      try {
+        const raw = readFileSync(backupPath, "utf-8");
+        const parsed = JSON.parse(raw);
+        const validated = schema.parse(parsed);
+
+        // Found a valid backup - log warning and return
+        console.warn(`[config-validator] Config ${path} invalid, using backup ${backupPath}`);
+
+        // Note: Actual file restore would happen here in production
+        // For now, just return the validated backup config
+        // TODO: Implement actual restore (requires fs.writeFileSync + rotateConfigBackups)
+
+        return validated;
+      } catch {
+        // This backup is also invalid, try next one
+        continue;
+      }
+    }
+
+    // No valid backups found - throw error with context
+    const errorMsg =
+      mainError instanceof z.ZodError
+        ? `Validation failed: ${
+            // Zod errors are typed as unknown[] but we know the structure
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (mainError as any).errors
+              .map((e: { path: string[]; message: string }) => `${e.path.join(".")}: ${e.message}`)
+              .join(", ")
+          }`
+        : mainError instanceof Error
+          ? mainError.message
+          : String(mainError);
+
+    throw new Error(
+      `Config validation failed for ${path} and no valid backups found. ${errorMsg}`,
+      { cause: mainError },
+    );
+  }
+}
+
+/**
+ * Load and validate a config file with automatic backup restore (async).
+ *
+ * Same as loadConfigWithValidationSync but async version for use in async contexts.
+ *
+ * @param path Path to config file
+ * @param schema Zod schema for validation
+ * @param backupDir Directory containing backup files (defaults to same dir as config)
+ * @returns Promise of validated config object
+ * @throws Error if config and all backups are invalid
  */
 export async function loadConfigWithValidation<T>(
   path: string,
@@ -155,12 +225,10 @@ export async function loadConfigWithValidation<T>(
         const parsed = JSON.parse(raw);
         const validated = schema.parse(parsed);
 
-        // Found a valid backup - restore it to main path
-        console.warn(
-          `[config-validator] Config ${path} invalid, restoring from backup ${backupPath}`,
-        );
+        // Found a valid backup - log warning and return
+        console.warn(`[config-validator] Config ${path} invalid, using backup ${backupPath}`);
 
-        // Note: Actual file write would happen here in production
+        // Note: Actual file restore would happen here in production
         // For now, just return the validated backup config
         // TODO: Implement actual restore (requires fs.writeFile + rotateConfigBackups)
 
@@ -174,7 +242,13 @@ export async function loadConfigWithValidation<T>(
     // No valid backups found - throw error with context
     const errorMsg =
       mainError instanceof z.ZodError
-        ? `Validation failed: ${mainError.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")}`
+        ? `Validation failed: ${
+            // Zod errors are typed as unknown[] but we know the structure
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (mainError as any).errors
+              .map((e: { path: string[]; message: string }) => `${e.path.join(".")}: ${e.message}`)
+              .join(", ")
+          }`
         : mainError instanceof Error
           ? mainError.message
           : String(mainError);

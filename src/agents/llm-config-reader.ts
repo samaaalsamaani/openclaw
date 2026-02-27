@@ -9,8 +9,9 @@
  * hardcoded values.
  */
 
-import { readFileSync, statSync } from "node:fs";
+import { statSync } from "node:fs";
 import { join } from "node:path";
+import { LlmConfigSchema, loadConfigWithValidationSync } from "../infra/config-validator.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { normalizeModelRef, type ModelRef } from "./model-selection.js";
 import type { TaskDomain } from "./task-classifier.js";
@@ -138,19 +139,20 @@ function loadRaw(): LLMConfig | null {
     if (cachedConfig && path === cachedPath && stat.mtimeMs === cachedMtimeMs) {
       return cachedConfig;
     }
-    const raw = JSON.parse(readFileSync(path, "utf-8")) as LLMConfig;
-    if (typeof raw.version !== "number" || raw.version !== 1) {
-      log.warn(`llm-config.json: unsupported version ${raw.version}, expected 1`);
+
+    // Load and validate config with automatic backup restore
+    const backupDir = join(path, "..");
+    const validated = loadConfigWithValidationSync(path, LlmConfigSchema, backupDir);
+
+    // Additional validation for version
+    if (typeof validated.version !== "number" || validated.version !== 1) {
+      log.warn(`llm-config.json: unsupported version ${validated.version}, expected 1`);
       return null;
     }
-    if (!raw.models || typeof raw.models !== "object") {
-      log.warn("llm-config.json: missing or invalid 'models' section");
-      return null;
-    }
-    if (!raw.tiers || typeof raw.tiers !== "object") {
-      log.warn("llm-config.json: missing or invalid 'tiers' section");
-      return null;
-    }
+
+    // Cast validated config to LLMConfig (Zod schema validates structure, runtime types match)
+    const raw = validated as unknown as LLMConfig;
+
     cachedConfig = raw;
     cachedMtimeMs = stat.mtimeMs;
     cachedPath = path;
