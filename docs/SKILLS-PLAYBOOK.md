@@ -64,3 +64,41 @@
 - ❌ Not committing frequently enough
 
 ---
+
+## Fixing Bugs
+
+**Intent:** "I encountered a bug" or "tests are failing"
+
+### Workflow
+
+1. **Use systematic-debugging**
+   - Invoke: `@superpowers:systematic-debugging`
+   - Purpose: Structured investigation using scientific method
+   - Required: Before proposing fixes
+
+2. **Apply TDD**
+   - Invoke: `@superpowers:test-driven-development`
+   - Purpose: Write failing test → minimal fix → verify
+   - Required: For all bug fixes
+
+3. **Verify the fix**
+   - Invoke: `@superpowers:verification-before-completion`
+   - Purpose: Ensure bug is actually fixed, no regressions
+   - Required: Before closing issue
+
+### When It's Not Just a Bug
+
+If investigation reveals:
+
+- Architecture issue → Use brainstorming to redesign
+- Missing feature → Switch to building features workflow
+- Configuration problem → Check documentation, update if needed
+
+### Common Mistakes
+
+- ❌ Guessing at the cause without investigation
+- ❌ Fixing symptoms instead of root cause
+- ❌ Not adding regression tests
+- ❌ Claiming "fixed" without verification
+
+---
