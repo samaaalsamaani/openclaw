@@ -49,4 +49,79 @@ describe("mcp-servers module", () => {
     // The actual error handling is tested via integration tests with real tools
     expect(true).toBe(true);
   });
+
+  describe("retry and timeout integration", () => {
+    it("MCP tools have retry wrapper", async () => {
+      // Verify that retry logic is imported and used
+      const code = await import("node:fs").then((fs) =>
+        fs.promises.readFile(
+          new URL("./mcp-servers.js", import.meta.url).pathname.replace(".js", ".ts"),
+          "utf-8",
+        ),
+      );
+
+      // Check that retryWithBackoff is imported
+      expect(code).toContain("import { retryWithBackoff }");
+      expect(code).toContain("retryWithBackoff");
+    });
+
+    it("MCP tools have timeout wrapper", async () => {
+      const code = await import("node:fs").then((fs) =>
+        fs.promises.readFile(
+          new URL("./mcp-servers.js", import.meta.url).pathname.replace(".js", ".ts"),
+          "utf-8",
+        ),
+      );
+
+      // Check that callWithTimeout is imported
+      expect(code).toContain("import");
+      expect(code).toContain("callWithTimeout");
+      expect(code).toContain("MCP_TIMEOUT_MS");
+    });
+
+    it("MCP tools use circuit breaker key", async () => {
+      const code = await import("node:fs").then((fs) =>
+        fs.promises.readFile(
+          new URL("./mcp-servers.js", import.meta.url).pathname.replace(".js", ".ts"),
+          "utf-8",
+        ),
+      );
+
+      // Check that circuit breaker keys are used
+      expect(code).toContain("circuitKey:");
+      expect(code).toContain("mcp-kb-server");
+      expect(code).toContain("mcp-system-server");
+    });
+
+    it("MCP KB tools share same circuit breaker", async () => {
+      const code = await import("node:fs").then((fs) =>
+        fs.promises.readFile(
+          new URL("./mcp-servers.js", import.meta.url).pathname.replace(".js", ".ts"),
+          "utf-8",
+        ),
+      );
+
+      // All KB tools should use the same circuit key
+      const kbToolMatches = code.match(/mcp-kb-server/g);
+      expect(kbToolMatches).toBeTruthy();
+      // Should have 11 KB tools (all except system_info)
+      expect(kbToolMatches!.length).toBeGreaterThanOrEqual(11);
+    });
+
+    it("error boundary layer preserved", async () => {
+      const code = await import("node:fs").then((fs) =>
+        fs.promises.readFile(
+          new URL("./mcp-servers.js", import.meta.url).pathname.replace(".js", ".ts"),
+          "utf-8",
+        ),
+      );
+
+      // Verify withErrorBoundary wrapper is still present
+      expect(code).toContain("withErrorBoundary");
+      // Should wrap all tools (12 total)
+      const errorBoundaryMatches = code.match(/withErrorBoundary\(/g);
+      expect(errorBoundaryMatches).toBeTruthy();
+      expect(errorBoundaryMatches!.length).toBeGreaterThanOrEqual(12);
+    });
+  });
 });

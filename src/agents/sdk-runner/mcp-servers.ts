@@ -11,6 +11,8 @@
 
 import type { McpServerConfig } from "@anthropic-ai/claude-agent-sdk";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
+import { retryWithBackoff } from "../retry-logic.js";
+import { callWithTimeout, MCP_TIMEOUT_MS } from "../timeout-enforcement.js";
 
 const log = createSubsystemLogger("agent/sdk-mcp");
 
@@ -79,7 +81,15 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
           "Search the knowledge base using keywords (FTS5 full-text search)",
           { query: z.string(), limit: z.number().optional() },
           withErrorBoundary("kb_query", async ({ query, limit }) => {
-            const results = kbQuery(query, limit ?? 5);
+            const results = await retryWithBackoff(
+              async () =>
+                callWithTimeout(
+                  async () => Promise.resolve(kbQuery(query, limit ?? 5)),
+                  MCP_TIMEOUT_MS,
+                  "mcp:kb_query",
+                ),
+              { name: "mcp:kb_query", circuitKey: "mcp-kb-server" },
+            );
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
@@ -90,7 +100,15 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
           "Get full article content by ID",
           { id: z.number() },
           withErrorBoundary("kb_article", async ({ id }) => {
-            const article = kbGetArticle(id);
+            const article = await retryWithBackoff(
+              async () =>
+                callWithTimeout(
+                  async () => Promise.resolve(kbGetArticle(id)),
+                  MCP_TIMEOUT_MS,
+                  "mcp:kb_article",
+                ),
+              { name: "mcp:kb_article", circuitKey: "mcp-kb-server" },
+            );
             return {
               content: [{ type: "text" as const, text: JSON.stringify(article, null, 2) }],
             };
@@ -101,7 +119,15 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
           "List recently ingested articles",
           { limit: z.number().optional() },
           withErrorBoundary("kb_recent", async ({ limit }) => {
-            const results = kbRecent(limit ?? 10);
+            const results = await retryWithBackoff(
+              async () =>
+                callWithTimeout(
+                  async () => Promise.resolve(kbRecent(limit ?? 10)),
+                  MCP_TIMEOUT_MS,
+                  "mcp:kb_recent",
+                ),
+              { name: "mcp:kb_recent", circuitKey: "mcp-kb-server" },
+            );
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
@@ -112,7 +138,15 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
           "Get knowledge base statistics",
           {},
           withErrorBoundary("kb_stats", async () => {
-            const stats = kbStats();
+            const stats = await retryWithBackoff(
+              async () =>
+                callWithTimeout(
+                  async () => Promise.resolve(kbStats()),
+                  MCP_TIMEOUT_MS,
+                  "mcp:kb_stats",
+                ),
+              { name: "mcp:kb_stats", circuitKey: "mcp-kb-server" },
+            );
             return {
               content: [{ type: "text" as const, text: JSON.stringify(stats, null, 2) }],
             };
@@ -127,7 +161,15 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             limit: z.number().optional(),
           },
           withErrorBoundary("kb_entities", async ({ query, type, limit }) => {
-            const results = await kbEntities(query, type, limit ?? 10);
+            const results = await retryWithBackoff(
+              async () =>
+                callWithTimeout(
+                  async () => kbEntities(query, type, limit ?? 10),
+                  MCP_TIMEOUT_MS,
+                  "mcp:kb_entities",
+                ),
+              { name: "mcp:kb_entities", circuitKey: "mcp-kb-server" },
+            );
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
@@ -143,7 +185,16 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             limit: z.number().optional(),
           },
           withErrorBoundary("kb_graph", async ({ entity_id, article_id, hops, limit }) => {
-            const results = kbGraph(entity_id, article_id, hops ?? 1, limit ?? 10);
+            const results = await retryWithBackoff(
+              async () =>
+                callWithTimeout(
+                  async () =>
+                    Promise.resolve(kbGraph(entity_id, article_id, hops ?? 1, limit ?? 10)),
+                  MCP_TIMEOUT_MS,
+                  "mcp:kb_graph",
+                ),
+              { name: "mcp:kb_graph", circuitKey: "mcp-kb-server" },
+            );
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
@@ -158,7 +209,15 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             limit: z.number().optional(),
           },
           withErrorBoundary("kb_decisions", async ({ query, domain, limit }) => {
-            const results = kbDecisions(query, domain, limit ?? 10);
+            const results = await retryWithBackoff(
+              async () =>
+                callWithTimeout(
+                  async () => Promise.resolve(kbDecisions(query, domain, limit ?? 10)),
+                  MCP_TIMEOUT_MS,
+                  "mcp:kb_decisions",
+                ),
+              { name: "mcp:kb_decisions", circuitKey: "mcp-kb-server" },
+            );
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
@@ -173,7 +232,15 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             limit: z.number().optional(),
           },
           withErrorBoundary("kb_playbooks", async ({ query, domain, limit }) => {
-            const results = kbPlaybooks(query, domain, limit ?? 10);
+            const results = await retryWithBackoff(
+              async () =>
+                callWithTimeout(
+                  async () => Promise.resolve(kbPlaybooks(query, domain, limit ?? 10)),
+                  MCP_TIMEOUT_MS,
+                  "mcp:kb_playbooks",
+                ),
+              { name: "mcp:kb_playbooks", circuitKey: "mcp-kb-server" },
+            );
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
@@ -188,7 +255,18 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             limit: z.number().optional(),
           },
           withErrorBoundary("kb_contradictions", async ({ unresolved_only, article_id, limit }) => {
-            const results = kbContradictions(unresolved_only ?? true, article_id, limit ?? 10);
+            const results = await retryWithBackoff(
+              async () =>
+                callWithTimeout(
+                  async () =>
+                    Promise.resolve(
+                      kbContradictions(unresolved_only ?? true, article_id, limit ?? 10),
+                    ),
+                  MCP_TIMEOUT_MS,
+                  "mcp:kb_contradictions",
+                ),
+              { name: "mcp:kb_contradictions", circuitKey: "mcp-kb-server" },
+            );
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
@@ -199,7 +277,15 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
           "Multi-source smart query — searches articles, entities, decisions, playbooks, and contradictions",
           { query: z.string(), agent_type: z.string().optional(), limit: z.number().optional() },
           withErrorBoundary("kb_smart_query", async ({ query, agent_type, limit }) => {
-            const results = await kbSmartQuery(query, agent_type, limit ?? 5);
+            const results = await retryWithBackoff(
+              async () =>
+                callWithTimeout(
+                  async () => kbSmartQuery(query, agent_type, limit ?? 5),
+                  MCP_TIMEOUT_MS,
+                  "mcp:kb_smart_query",
+                ),
+              { name: "mcp:kb_smart_query", circuitKey: "mcp-kb-server" },
+            );
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
@@ -210,7 +296,15 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
           "List entity communities — clusters of related knowledge",
           { community_id: z.number().optional(), limit: z.number().optional() },
           withErrorBoundary("kb_communities", async ({ community_id, limit }) => {
-            const results = kbCommunities(community_id, limit ?? 10);
+            const results = await retryWithBackoff(
+              async () =>
+                callWithTimeout(
+                  async () => Promise.resolve(kbCommunities(community_id, limit ?? 10)),
+                  MCP_TIMEOUT_MS,
+                  "mcp:kb_communities",
+                ),
+              { name: "mcp:kb_communities", circuitKey: "mcp-kb-server" },
+            );
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
@@ -231,15 +325,24 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
           "Get basic system information (hostname, platform, uptime, memory)",
           {},
           withErrorBoundary("system_info", async () => {
-            const info = {
-              hostname: os.hostname(),
-              platform: os.platform(),
-              arch: os.arch(),
-              uptimeSeconds: Math.round(os.uptime()),
-              totalMemoryGB: Math.round((os.totalmem() / 1073741824) * 10) / 10,
-              freeMemoryGB: Math.round((os.freemem() / 1073741824) * 10) / 10,
-              nodeVersion: process.version,
-            };
+            const info = await retryWithBackoff(
+              async () =>
+                callWithTimeout(
+                  async () =>
+                    Promise.resolve({
+                      hostname: os.hostname(),
+                      platform: os.platform(),
+                      arch: os.arch(),
+                      uptimeSeconds: Math.round(os.uptime()),
+                      totalMemoryGB: Math.round((os.totalmem() / 1073741824) * 10) / 10,
+                      freeMemoryGB: Math.round((os.freemem() / 1073741824) * 10) / 10,
+                      nodeVersion: process.version,
+                    }),
+                  MCP_TIMEOUT_MS,
+                  "mcp:system_info",
+                ),
+              { name: "mcp:system_info", circuitKey: "mcp-system-server" },
+            );
             return {
               content: [{ type: "text" as const, text: JSON.stringify(info, null, 2) }],
             };
