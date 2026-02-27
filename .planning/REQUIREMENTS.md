@@ -217,7 +217,68 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Unmapped: 0
 - Coverage: 100%
 
+## v3.0 Requirements (System Reliability & Hardening)
+
+**NOT adding features** — pure stabilization to make v1/v2 infrastructure production-grade.
+
+### Service Reliability (SERV)
+
+- [ ] **SERV-01**: Gateway runs 7+ days without crash, hang, or restart
+- [ ] **SERV-02**: All 6 launchd services start successfully on boot and stay running
+- [ ] **SERV-03**: MCP servers handle 1000+ consecutive calls without crashing
+- [ ] **SERV-04**: Embedding server processes requests without memory leaks or timeouts
+- [ ] **SERV-05**: File watcher monitors directories without missing events or dying
+- [ ] **SERV-06**: Heartbeat tasks (daily/weekly) execute successfully on schedule
+
+### Integration Reliability (INTEG)
+
+- [ ] **INTEG-01**: Gateway ↔ Claude SDK calls succeed 99%+ (no ARG_MAX, timeout, or parsing errors)
+- [ ] **INTEG-02**: MCP cross-calls between CLIs work reliably (no connection drops or timeouts)
+- [ ] **INTEG-03**: Hooks (PreToolUse, PostToolUse, SessionStart) execute without crashing parent process
+- [ ] **INTEG-04**: Agent SDK handles long prompts (>10KB) without ARG_MAX errors
+- [ ] **INTEG-05**: Codex subprocess calls have proper error handling and cleanup
+- [ ] **INTEG-06**: MCP server errors are caught and logged (no silent failures)
+
+### Data Integrity (DATA)
+
+- [ ] **DATA-01**: SQLite databases use proper busy_timeout and WAL mode (no lock errors)
+- [ ] **DATA-02**: Config files (llm-config, auth-profiles, openclaw.json) are never corrupted or overwritten unexpectedly
+- [ ] **DATA-03**: Credential refresh works automatically (Late.dev tokens, OAuth renewal)
+- [ ] **DATA-04**: Codex OAuth token renewal process documented and automated (expires Mar 3!)
+- [ ] **DATA-05**: Remove placeholder 0-byte SQLite files (kb.sqlite, knowledge-base.sqlite, social.sqlite in ~/.openclaw/)
+- [ ] **DATA-06**: Config schema validation prevents invalid keys from crashing Gateway
+- [ ] **DATA-07**: Auth-profiles.json is single source of truth (no plist fallback causing drift)
+
+### Observability & Monitoring (OBS)
+
+- [ ] **OBS-01**: Comprehensive health check endpoint covering all services, APIs, databases
+- [ ] **OBS-02**: Service crash detection with automatic restart (launchd KeepAlive + logging)
+- [ ] **OBS-03**: Integration failure alerts (MCP timeouts, SDK errors logged to observability.sqlite)
+- [ ] **OBS-04**: Config corruption detection (validate before loading, alert on schema errors)
+- [ ] **OBS-05**: Credential expiry warnings (check all tokens, warn 7 days before expiry)
+- [ ] **OBS-06**: Daily health report (email/notification with status of all components)
+- [ ] **OBS-07**: Dashboard showing system health at a glance (services, APIs, databases, recent errors)
+
+### Recovery Procedures (REC)
+
+- [ ] **REC-01**: Gateway crash recovery — documented steps to restart and verify
+- [ ] **REC-02**: MCP server crash recovery — how to restart individual servers
+- [ ] **REC-03**: Config corruption recovery — restore from backup, validate, reload
+- [ ] **REC-04**: Database lock recovery — kill hanging connections, verify integrity
+- [ ] **REC-05**: Credential renewal procedures — OAuth flow, token refresh, key rotation
+- [ ] **REC-06**: Runbook for each service (how it works, how to diagnose, how to fix)
+
+### Change Safety (CHANGE)
+
+- [ ] **CHANGE-01**: Config changes validated before apply (Zod schema check, dry-run mode)
+- [ ] **CHANGE-02**: Config backup before changes (auto-backup to ~/.openclaw/backups/)
+- [ ] **CHANGE-03**: Gateway config no longer rewritten on shutdown (fix the auto-rewrite bug)
+- [ ] **CHANGE-04**: Rollback mechanism for failed config changes
+- [ ] **CHANGE-05**: Integration tests for critical paths (MCP calls, SDK invocation, hooks)
+- [ ] **CHANGE-06**: Pre-commit hooks validate scripts (syntax check, lint)
+- [ ] **CHANGE-07**: Version locking for critical dependencies (prevent breaking updates)
+
 ---
 
-_Requirements defined: 2026-02-22_
-_Last updated: 2026-02-22 — v2 requirements expanded (21 requirements across 5 groups, 6 phases)_
+_Requirements defined: 2026-02-22 (v1/v2), 2026-02-27 (v3.0)_
+_Last updated: 2026-02-27 — v3.0 stabilization requirements added (37 requirements across 6 groups)_
