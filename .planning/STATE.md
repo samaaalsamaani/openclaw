@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: System Reliability & Hardening
 status: unknown
-last_updated: "2026-02-27T20:50:02.208Z"
+last_updated: "2026-02-27T21:01:03.806Z"
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State
@@ -24,9 +24,9 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 18 of 21 (Data Integrity & Config Safety)
-Plan: 2 of 3 complete (18-02-PLAN.md)
-Status: In Progress
-Last activity: 2026-02-27 — Completed OAuth credential expiry monitoring and refresh automation
+Plan: 3 of 3 complete (18-03-PLAN.md)
+Status: Complete
+Last activity: 2026-02-28 — Completed legacy cleanup and auth-profiles enforcement
 
 Progress: [███████████████░] 76% (16 of 21 phases complete)
 
@@ -79,6 +79,7 @@ v3.0 is NOT feature-building — pure stabilization:
 | ---- | ----- | ----- | -------- |
 | P01  | 3     | 7     | TBD      |
 | P02  | 3     | 6     | 585s     |
+| P03  | 3     | 2     | 272s     |
 
 ## Accumulated Context
 
@@ -121,6 +122,8 @@ Recent decisions from PROJECT.md:
 - [Phase 18 P02]: Atomic writes for token rotation prevent credential loss - non-atomic save risks losing both tokens mid-write during power failure
 - [Phase 18 P02]: Credential check runs BEFORE other daily tasks - prevents cascading API failures if credentials expired overnight
 - [Phase 18 P02]: OAuth refresh uses manual fs.writeFile instead of saveAuthProfileStore for atomic write guarantees (temp file + rename)
+- [Phase 18]: Safe migration pattern checks file size and open handles before deletion
+- [Phase 18]: load-env.sh fails fast if auth-profiles.json missing (no silent fallback)
 
 ### System Crisis Context
 
@@ -141,10 +144,10 @@ None yet.
 
 ### Blockers/Concerns
 
-None. Phase 18 Plan 02 complete.
+None. Phase 18 complete.
 
 ## Session Continuity
 
-Last session: 2026-02-27
-Stopped at: Completed 18-02-PLAN.md (OAuth credential expiry monitoring and refresh automation)
+Last session: 2026-02-28
+Stopped at: Completed 18-03-PLAN.md (Legacy cleanup and auth-profiles enforcement)
 Resume file: Ready for next plan (18-03-PLAN.md)
