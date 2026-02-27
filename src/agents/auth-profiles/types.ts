@@ -28,6 +28,11 @@ export type OAuthCredential = OAuthCredentials & {
   provider: string;
   clientId?: string;
   email?: string;
+  /**
+   * Token expiry timestamp (ms since epoch), undefined if unknown.
+   * Used by credential monitoring to detect expiring tokens and trigger refresh.
+   */
+  expiresAt?: number;
 };
 
 export type AuthProfileCredential = ApiKeyCredential | TokenCredential | OAuthCredential;
