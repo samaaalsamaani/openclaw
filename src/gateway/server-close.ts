@@ -1,10 +1,58 @@
 import type { Server as HttpServer } from "node:http";
+import process from "node:process";
 import type { WebSocketServer } from "ws";
 import type { CanvasHostHandler, CanvasHostServer } from "../canvas-host/server.js";
 import { type ChannelId, listChannelPlugins } from "../channels/plugins/index.js";
 import { stopGmailWatcher } from "../hooks/gmail-watcher.js";
+import { logServiceCrash } from "../infra/crash-logger.js";
 import type { HeartbeatRunner } from "../infra/heartbeat-runner.js";
 import type { PluginServicesHandle } from "../plugins/services.js";
+
+// Module-level timer tracking for resource cleanup validation
+const activeTimers = new Set<NodeJS.Timeout>();
+
+/**
+ * Register a timer for tracking. Call this when creating setInterval/setTimeout.
+ * Returns the timer handle for use with clearInterval/clearTimeout.
+ */
+export function registerTimer<T extends NodeJS.Timeout>(timer: T): T {
+  activeTimers.add(timer);
+  return timer;
+}
+
+/**
+ * Clear a timer and remove from tracking set.
+ * Idempotent — safe to call multiple times.
+ */
+export function clearTimer(timer: NodeJS.Timeout | null | undefined): void {
+  if (!timer) {
+    return;
+  }
+  clearInterval(timer);
+  activeTimers.delete(timer);
+}
+
+// Install process.on('exit') handler for crash logging
+let exitHandlerInstalled = false;
+
+function installExitHandler(): void {
+  if (exitHandlerInstalled) {
+    return;
+  }
+  exitHandlerInstalled = true;
+
+  process.on("exit", (code) => {
+    logServiceCrash({
+      serviceName: "gateway",
+      exitCode: code,
+      signal: process.env.SHUTDOWN_SIGNAL ?? null,
+      restartAttempt: Number.parseInt(process.env.LAUNCHD_RESTART_COUNT ?? "0", 10),
+    });
+  });
+}
+
+// Install exit handler on module load
+installExitHandler();
 
 export function createGatewayCloseHandler(params: {
   bonjourStop: (() => Promise<void>) | null;
@@ -87,6 +135,12 @@ export function createGatewayCloseHandler(params: {
     clearInterval(params.tickInterval);
     clearInterval(params.healthInterval);
     clearInterval(params.dedupeCleanup);
+
+    // Clear all tracked timers to prevent resource leaks
+    for (const timer of activeTimers) {
+      clearInterval(timer);
+    }
+    activeTimers.clear();
     if (params.agentUnsub) {
       try {
         params.agentUnsub();
