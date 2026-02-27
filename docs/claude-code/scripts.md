@@ -113,6 +113,18 @@ All scripts require:
 - `jq` (for JSON validation)
 - Standard Unix utilities (`tar`, `cp`, `find`)
 
+## Configuration Templates
+
+Configuration templates are available in `~/.claude/config-templates/`:
+
+- `paios-config.json` - Complete PAIOS configuration snapshot
+- `minimal-config.json` - Minimal working configuration
+- `keybindings-essential.json` - Recommended keybindings
+- `mcp-paios.json` - MCP server configurations
+- `README.md` - Template usage guide
+
+See the templates README for usage instructions and best practices.
+
 ## Future Enhancements
 
 Planned operational tools (not yet implemented):
