@@ -73,16 +73,16 @@ describe("shouldVerify", () => {
     expect(shouldVerify("search", 82)).toBe(true);
   });
 
-  it("returns false for system domain (not verifiable)", () => {
-    expect(shouldVerify("system", 90)).toBe(false);
+  it("returns true for system domain (verifiable)", () => {
+    expect(shouldVerify("system", 90)).toBe(true);
   });
 
   it("returns false for schedule domain (not verifiable)", () => {
     expect(shouldVerify("schedule", 95)).toBe(false);
   });
 
-  it("returns false for vision domain (not verifiable)", () => {
-    expect(shouldVerify("vision", 95)).toBe(false);
+  it("returns true for vision domain (verifiable)", () => {
+    expect(shouldVerify("vision", 95)).toBe(true);
   });
 
   it("returns false for low confidence even on verifiable domain", () => {
@@ -111,18 +111,18 @@ describe("getVerifier", () => {
     "search",
   ];
 
-  it("returns anthropic/haiku for all domains", () => {
+  it("returns anthropic/sonnet for all domains", () => {
     for (const domain of ALL_DOMAINS) {
       const verifier = getVerifier(domain);
       expect(verifier.provider).toBe("anthropic");
-      expect(verifier.model).toBe("claude-haiku-4-5");
+      expect(verifier.model).toBe("claude-sonnet-4-6");
     }
   });
 
   it("falls back to code verifier for unknown domain", () => {
     const verifier = getVerifier("unknown" as TaskDomain);
     expect(verifier.provider).toBe("anthropic");
-    expect(verifier.model).toBe("claude-haiku-4-5");
+    expect(verifier.model).toBe("claude-sonnet-4-6");
   });
 
   it("never returns google-gemini-cli (not a valid CLI backend)", () => {
@@ -199,7 +199,7 @@ describe("executeVerification", () => {
     expect(result.confidence).toBe(92);
     expect(result.issues).toEqual([]);
     expect(result.verifierProvider).toBe("anthropic");
-    expect(result.verifierModel).toBe("claude-haiku-4-5");
+    expect(result.verifierModel).toBe("claude-sonnet-4-6");
   });
 
   it("returns parsed result with issues", async () => {
@@ -263,6 +263,6 @@ describe("executeVerification", () => {
 
     const call = runCliAgentMock.mock.calls[0][0] as { provider: string; model: string };
     expect(call.provider).toBe("claude-cli"); // anthropic resolves to claude-cli
-    expect(call.model).toBe("claude-haiku-4-5");
+    expect(call.model).toBe("claude-sonnet-4-6");
   });
 });

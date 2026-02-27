@@ -40,13 +40,13 @@ export type VerificationResult = {
 // Each domain is verified by a DIFFERENT brain to catch blind spots.
 
 const VERIFIER_TABLE: Record<TaskDomain, { provider: string; model: string }> = {
-  code: { provider: "anthropic", model: "claude-haiku-4-5" },
-  creative: { provider: "anthropic", model: "claude-haiku-4-5" },
-  analysis: { provider: "anthropic", model: "claude-haiku-4-5" },
-  vision: { provider: "anthropic", model: "claude-haiku-4-5" },
-  system: { provider: "anthropic", model: "claude-haiku-4-5" },
-  schedule: { provider: "anthropic", model: "claude-haiku-4-5" },
-  search: { provider: "anthropic", model: "claude-haiku-4-5" },
+  code: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  creative: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  analysis: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  vision: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  system: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  schedule: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  search: { provider: "anthropic", model: "claude-sonnet-4-6" },
 };
 
 // ── Gate: only verify high-impact domains with high confidence ──────

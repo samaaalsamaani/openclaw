@@ -6,9 +6,9 @@
  *   code     → Codex (gpt-5.3-codex) — code review, debugging, refactoring
  *   creative → Claude Opus — writing, brainstorming, content creation
  *   analysis → Claude Sonnet — research, summarization, data analysis
- *   vision   → Gemini Pro (CLI) — image analysis, screenshots, diagrams
- *   search   → Gemini Flash (CLI) — web search, current events, live data
- *   system   → Claude Haiku — system commands, quick lookups, classification
+ *   vision   → Claude Sonnet — image analysis, screenshots, diagrams
+ *   search   → Claude Sonnet — web search, current events, live data
+ *   system   → Claude Sonnet — system commands, quick lookups, classification
  *   schedule → Claude Sonnet — calendar, reminders, planning
  */
 
@@ -549,15 +549,15 @@ const USER_OVERRIDE_PATTERNS: OverridePattern[] = [
 const ROUTING_TABLE: Record<TaskDomain, { provider: string; model: string }> = {
   code: { provider: "openai-codex", model: "gpt-5.3-codex" },
   creative: { provider: "anthropic", model: "claude-opus-4-6" },
-  analysis: { provider: "anthropic", model: "claude-sonnet-4-5" },
-  vision: { provider: "google-gemini-cli", model: "gemini-2.5-pro" },
-  system: { provider: "anthropic", model: "claude-haiku-4-5" },
-  schedule: { provider: "anthropic", model: "claude-sonnet-4-5" },
-  search: { provider: "google-gemini-cli", model: "gemini-2.5-flash" },
+  analysis: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  vision: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  system: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  schedule: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  search: { provider: "anthropic", model: "claude-sonnet-4-6" },
 };
 
 /** Default when confidence is below threshold */
-const DEFAULT_ROUTE = { provider: "anthropic", model: "claude-sonnet-4-5" };
+const DEFAULT_ROUTE = { provider: "anthropic", model: "claude-sonnet-4-6" };
 const CONFIDENCE_THRESHOLD = 70;
 
 // ── Dynamic routing weights (loaded from optimize.js output) ────────

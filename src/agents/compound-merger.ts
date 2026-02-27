@@ -4,7 +4,7 @@
  *
  * Tiered strategy:
  *   1. No secondaries succeeded → return primary text as-is
- *   2. 1+ secondaries succeeded → LLM merge via Haiku
+ *   2. 1+ secondaries succeeded → LLM merge via Sonnet
  *   3. Merge LLM fails → simple concatenation with dividers
  */
 
@@ -32,7 +32,7 @@ export async function mergeSubTaskResults(input: {
     return input.primaryResult.content;
   }
 
-  // Tier 2: LLM merge via Haiku
+  // Tier 2: LLM merge via Sonnet
   try {
     const merged = await llmMerge(input.originalPrompt, input.primaryResult, succeeded, input);
     if (merged) {
@@ -48,7 +48,7 @@ export async function mergeSubTaskResults(input: {
   return concatenateFallback(input.primaryResult, succeeded);
 }
 
-// ── LLM merge via Haiku ─────────────────────────────────────────────
+// ── LLM merge via Sonnet ────────────────────────────────────────────
 
 async function llmMerge(
   originalPrompt: string,
@@ -101,7 +101,7 @@ async function llmMerge(
     config: loadConfig(),
     prompt: mergePrompt,
     provider: resolveCliProvider("anthropic"),
-    model: "claude-haiku-4-5",
+    model: "claude-sonnet-4-6",
     timeoutMs: opts.timeoutMs,
     runId: mergeRunId,
   });

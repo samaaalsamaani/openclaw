@@ -22,11 +22,11 @@ export function resolveCliProvider(provider: string): string {
 export const ENRICHMENT_TABLE: Record<TaskDomain, { provider: string; model: string }> = {
   code: { provider: "openai-codex", model: "gpt-5.3-codex" },
   creative: { provider: "anthropic", model: "claude-opus-4-6" },
-  analysis: { provider: "anthropic", model: "claude-sonnet-4-5" },
-  search: { provider: "google-gemini-cli", model: "gemini-2.5-flash" },
-  vision: { provider: "google-gemini-cli", model: "gemini-2.5-pro" },
-  system: { provider: "anthropic", model: "claude-haiku-4-5" },
-  schedule: { provider: "anthropic", model: "claude-haiku-4-5" },
+  analysis: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  search: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  vision: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  system: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  schedule: { provider: "anthropic", model: "claude-sonnet-4-6" },
 };
 
 // ── Domain-specific prompt guidance ─────────────────────────────────

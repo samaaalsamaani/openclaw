@@ -71,7 +71,7 @@ Return a JSON array of objects with {title, content, tags} or an empty array [] 
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-sonnet-4-6",
         max_tokens: 512,
         messages: [{ role: "user", content: prompt }],
       }),

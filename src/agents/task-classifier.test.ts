@@ -86,7 +86,7 @@ describe("classifyTask", () => {
   it("returns default when nothing matches", () => {
     const result = classifyTask({ message: "hello" });
     expect(result.provider).toBe("anthropic");
-    expect(result.model).toBe("claude-sonnet-4-5");
+    expect(result.model).toBe("claude-sonnet-4-6");
   });
 
   it("returns confidence of 100 for explicit override", () => {
@@ -227,7 +227,7 @@ describe("@prefix routing", () => {
   it("@search forces search domain", () => {
     const result = classifyTask({ message: "@search what is the meaning of life" });
     expect(result.domain).toBe("search");
-    expect(result.provider).toBe("google-gemini-cli");
+    expect(result.provider).toBe("anthropic");
   });
 
   it("@analysis forces analysis domain", () => {
@@ -238,7 +238,7 @@ describe("@prefix routing", () => {
   it("@vision forces vision domain", () => {
     const result = classifyTask({ message: "@vision check this out" });
     expect(result.domain).toBe("vision");
-    expect(result.provider).toBe("google-gemini-cli");
+    expect(result.provider).toBe("anthropic");
   });
 
   it("@fast routes to system/Haiku with fast flag", () => {

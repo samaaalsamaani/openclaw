@@ -336,7 +336,7 @@ describe("executeDecomposition", () => {
     };
     // search domain maps to claude-cli via PROVIDER_TO_CLI (anthropic → claude-cli)
     expect(call.provider).toBe("claude-cli");
-    expect(call.model).toBe("claude-haiku-4-5");
+    expect(call.model).toBe("claude-sonnet-4-6");
     expect(call.timeoutMs).toBe(30_000);
   });
 
