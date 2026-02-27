@@ -8,7 +8,7 @@ progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 3
 ---
 
 # Project State
@@ -24,9 +24,9 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 16 of 21 (Service Hardening)
-Plan: 1 of 4 complete (16-00-PLAN.md)
+Plan: 3 of 4 complete (16-01-PLAN.md)
 Status: In progress
-Last activity: 2026-02-27 — Completed test scaffolds for infrastructure modules
+Last activity: 2026-02-27 — Completed crash recovery and error boundaries implementation
 
 Progress: [██████████████░░] 71% (15 of 21 phases complete)
 
@@ -55,7 +55,14 @@ v3.0 is NOT feature-building — pure stabilization:
 - Add monitoring and alerting
 - Document recovery procedures
 - Make changes safe
-  | Phase 16 P00 | 3 | 3 tasks | 5 files |
+
+**Phase 16 Performance:**
+
+| Plan | Tasks | Files | Duration |
+| ---- | ----- | ----- | -------- |
+| P00  | 3     | 5     | -        |
+| P01  | 3     | 8     | 572s     |
+| P02  | 3     | 6     | 472s     |
 
 ## Accumulated Context
 
@@ -67,6 +74,11 @@ Recent decisions from PROJECT.md:
 - [Phase 16]: Test scaffolds before implementation enforces testability
 - [Phase 16]: Todo markers document contract without false passes
 - [Phase 16]: Separate MCP test file isolates error boundary testing
+- [Phase 16 P02]: 60-second monitoring interval balances detection speed vs GC noise
+- [Phase 16 P02]: 12-minute rolling window smooths GC spikes while catching real leaks
+- [Phase 16 P02]: 10MB/hour threshold catches significant leaks without false positives
+- [Phase 16 P02]: 5-failure circuit breaker threshold follows industry standard
+- [Phase 16 P02]: 1000-request worker recycling prevents ML model memory leaks
 
 ### System Crisis Context
 
@@ -92,5 +104,5 @@ None yet. Phase 16 ready to plan.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 16-00-PLAN.md (test scaffolds)
-Resume file: Ready to execute 16-01-PLAN.md
+Stopped at: Completed 16-02-PLAN.md (memory leak detection & circuit breaker)
+Resume file: Ready to execute 16-03-PLAN.md

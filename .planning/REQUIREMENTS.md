@@ -225,7 +225,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 - [x] **SERV-01**: Gateway runs 7+ days without crash, hang, or restart
 - [ ] **SERV-02**: All 6 launchd services start successfully on boot and stay running
 - [x] **SERV-03**: MCP servers handle 1000+ consecutive calls without crashing
-- [ ] **SERV-04**: Embedding server processes requests without memory leaks or timeouts
+- [x] **SERV-04**: Embedding server processes requests without memory leaks or timeouts
 - [ ] **SERV-05**: File watcher monitors directories without missing events or dying
 - [ ] **SERV-06**: Heartbeat tasks (daily/weekly) execute successfully on schedule
 
@@ -284,7 +284,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SERV-01     | Phase 16: Service Hardening              | Complete |
 | SERV-02     | Phase 16: Service Hardening              | Pending  |
 | SERV-03     | Phase 16: Service Hardening              | Complete |
-| SERV-04     | Phase 16: Service Hardening              | Pending  |
+| SERV-04     | Phase 16: Service Hardening              | Complete |
 | SERV-05     | Phase 16: Service Hardening              | Pending  |
 | SERV-06     | Phase 16: Service Hardening              | Pending  |
 | INTEG-01    | Phase 17: Integration Reliability        | Pending  |
