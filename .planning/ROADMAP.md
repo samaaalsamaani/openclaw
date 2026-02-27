@@ -506,7 +506,7 @@ Plans:
 | 13. Unified CLI                    | 2/2            | Complete    | 2026-02-22 |
 | 14. Agent Teams                    | 3/3            | Complete    | 2026-02-22 |
 | 15. Dashboard & Self-Reflection    | 2/2            | Complete    | 2026-02-22 |
-| 16. Service Hardening              | 2/4            | In Progress |            |
+| 16. Service Hardening              | 3/4            | In Progress |            |
 | 17. Integration Reliability        | 0/3            | Not started | -          |
 | 18. Data Integrity & Config Safety | 0/3            | Not started | -          |
 | 19. Monitoring & Alerting          | 0/3            | Not started | -          |

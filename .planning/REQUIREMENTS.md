@@ -227,7 +227,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 - [x] **SERV-03**: MCP servers handle 1000+ consecutive calls without crashing
 - [x] **SERV-04**: Embedding server processes requests without memory leaks or timeouts
 - [ ] **SERV-05**: File watcher monitors directories without missing events or dying
-- [ ] **SERV-06**: Heartbeat tasks (daily/weekly) execute successfully on schedule
+- [x] **SERV-06**: Heartbeat tasks (daily/weekly) execute successfully on schedule
 
 ### Integration Reliability (INTEG)
 
@@ -286,7 +286,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SERV-03     | Phase 16: Service Hardening              | Complete |
 | SERV-04     | Phase 16: Service Hardening              | Complete |
 | SERV-05     | Phase 16: Service Hardening              | Pending  |
-| SERV-06     | Phase 16: Service Hardening              | Pending  |
+| SERV-06     | Phase 16: Service Hardening              | Complete |
 | INTEG-01    | Phase 17: Integration Reliability        | Pending  |
 | INTEG-02    | Phase 17: Integration Reliability        | Pending  |
 | INTEG-03    | Phase 17: Integration Reliability        | Pending  |

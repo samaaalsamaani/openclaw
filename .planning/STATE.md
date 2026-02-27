@@ -74,6 +74,10 @@ Recent decisions from PROJECT.md:
 - [Phase 16]: Test scaffolds before implementation enforces testability
 - [Phase 16]: Todo markers document contract without false passes
 - [Phase 16]: Separate MCP test file isolates error boundary testing
+- [Phase 16 P01]: Use better-sqlite3 singleton pattern for crash logger (keep connection open for fast writes)
+- [Phase 16 P01]: Install exit handler on module load (ensures crash logging even in unexpected exits)
+- [Phase 16 P01]: Error boundaries return isError=true instead of throwing (MCP clients can handle gracefully)
+- [Phase 16 P01]: Track timers in module-level Set (enables validation that all resources are cleaned up)
 - [Phase 16 P02]: 60-second monitoring interval balances detection speed vs GC noise
 - [Phase 16 P02]: 12-minute rolling window smooths GC spikes while catching real leaks
 - [Phase 16 P02]: 10MB/hour threshold catches significant leaks without false positives
@@ -104,5 +108,5 @@ None yet. Phase 16 ready to plan.
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 16-02-PLAN.md (memory leak detection & circuit breaker)
-Resume file: Ready to execute 16-03-PLAN.md
+Stopped at: Completed 16-01-PLAN.md (crash recovery & error boundaries)
+Resume file: Ready to execute next plan
