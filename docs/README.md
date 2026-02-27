@@ -15,6 +15,7 @@ Complete guide to Superpowers, GSD, and PAIOS Skills optimization.
 - **[GSD Guide](GSD-GUIDE.md)** - Complete GSD command reference
 - **[Configuration Reference](CONFIG-REFERENCE.md)** - All settings explained
 - **[Integration Map](INTEGRATION-MAP.md)** - How everything connects
+- **[Claude Configuration Docs](claude-config/README.md)** - Complete Claude CLI configuration guide
 
 ## 🔍 Audit Reports
 
