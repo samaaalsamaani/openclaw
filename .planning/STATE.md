@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: System Reliability & Hardening
 status: unknown
-last_updated: "2026-02-27T20:35:36.242Z"
+last_updated: "2026-02-27T20:50:02.208Z"
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -24,9 +24,9 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 18 of 21 (Data Integrity & Config Safety)
-Plan: 1 of 3 complete (18-01-PLAN.md)
+Plan: 2 of 3 complete (18-02-PLAN.md)
 Status: In Progress
-Last activity: 2026-02-27 — Completed WAL mode initialization and config validation with backup restore
+Last activity: 2026-02-27 — Completed OAuth credential expiry monitoring and refresh automation
 
 Progress: [███████████████░] 76% (16 of 21 phases complete)
 
@@ -67,11 +67,18 @@ v3.0 is NOT feature-building — pure stabilization:
 
 **Phase 17 Performance:**
 
-| Plan                                 | Tasks | Files   | Duration |
-| ------------------------------------ | ----- | ------- | -------- |
-| P01                                  | 3     | 5       | 1119s    |
-| P03                                  | 3     | 5       | 259s     |
-| Phase 17-integration-reliability P02 | 502   | 3 tasks | 6 files  |
+| Plan | Tasks | Files | Duration |
+| ---- | ----- | ----- | -------- |
+| P01  | 3     | 5     | 1119s    |
+| P03  | 3     | 5     | 259s     |
+| P02  | 3     | 6     | 502s     |
+
+**Phase 18 Performance:**
+
+| Plan | Tasks | Files | Duration |
+| ---- | ----- | ----- | -------- |
+| P01  | 3     | 7     | TBD      |
+| P02  | 3     | 6     | 585s     |
 
 ## Accumulated Context
 
@@ -110,6 +117,10 @@ Recent decisions from PROJECT.md:
 - [Phase 18]: Non-singleton database pattern lets callers manage connection lifecycle (different services need different lifetimes)
 - [Phase 18]: Graceful WAL degradation - logs warning but doesn't crash if WAL fails (optimization, not requirement)
 - [Phase 18]: Strict mode on LlmConfigSchema and AuthProfilesSchema to catch typos, passthrough on OpenClawConfigSchema (100+ fields)
+- [Phase 18 P02]: 7-day notification window balances urgency and user stress - too short (1 day) creates stress, too long (14 days) allows forgetting
+- [Phase 18 P02]: Atomic writes for token rotation prevent credential loss - non-atomic save risks losing both tokens mid-write during power failure
+- [Phase 18 P02]: Credential check runs BEFORE other daily tasks - prevents cascading API failures if credentials expired overnight
+- [Phase 18 P02]: OAuth refresh uses manual fs.writeFile instead of saveAuthProfileStore for atomic write guarantees (temp file + rename)
 
 ### System Crisis Context
 
@@ -130,10 +141,10 @@ None yet.
 
 ### Blockers/Concerns
 
-None. Phase 18 Plan 01 complete.
+None. Phase 18 Plan 02 complete.
 
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 18-01-PLAN.md (WAL mode initialization and config validation with backup restore)
-Resume file: Ready for next plan (18-02-PLAN.md)
+Stopped at: Completed 18-02-PLAN.md (OAuth credential expiry monitoring and refresh automation)
+Resume file: Ready for next plan (18-03-PLAN.md)

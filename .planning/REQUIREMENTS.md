@@ -242,11 +242,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 - [x] **DATA-01**: SQLite databases use proper busy_timeout and WAL mode (no lock errors)
 - [x] **DATA-02**: Config files (llm-config, auth-profiles, openclaw.json) are never corrupted or overwritten unexpectedly
-- [ ] **DATA-03**: Credential refresh works automatically (Late.dev tokens, OAuth renewal)
-- [ ] **DATA-04**: Codex OAuth token renewal process documented and automated (expires Mar 3!)
+- [x] **DATA-03**: Credential refresh works automatically (Late.dev tokens, OAuth renewal)
+- [x] **DATA-04**: Codex OAuth token renewal process documented and automated (expires Mar 3!)
 - [ ] **DATA-05**: Remove placeholder 0-byte SQLite files (kb.sqlite, knowledge-base.sqlite, social.sqlite in ~/.openclaw/)
 - [x] **DATA-06**: Config schema validation prevents invalid keys from crashing Gateway
-- [ ] **DATA-07**: Auth-profiles.json is single source of truth (no plist fallback causing drift)
+- [x] **DATA-07**: Auth-profiles.json is single source of truth (no plist fallback causing drift)
 
 ### Observability & Monitoring (OBS)
 
@@ -295,11 +295,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INTEG-06    | Phase 17: Integration Reliability        | Complete |
 | DATA-01     | Phase 18: Data Integrity & Config Safety | Complete |
 | DATA-02     | Phase 18: Data Integrity & Config Safety | Complete |
-| DATA-03     | Phase 18: Data Integrity & Config Safety | Pending  |
-| DATA-04     | Phase 18: Data Integrity & Config Safety | Pending  |
+| DATA-03     | Phase 18: Data Integrity & Config Safety | Complete |
+| DATA-04     | Phase 18: Data Integrity & Config Safety | Complete |
 | DATA-05     | Phase 18: Data Integrity & Config Safety | Pending  |
 | DATA-06     | Phase 18: Data Integrity & Config Safety | Complete |
-| DATA-07     | Phase 18: Data Integrity & Config Safety | Pending  |
+| DATA-07     | Phase 18: Data Integrity & Config Safety | Complete |
 | OBS-01      | Phase 19: Monitoring & Alerting          | Pending  |
 | OBS-02      | Phase 19: Monitoring & Alerting          | Pending  |
 | OBS-03      | Phase 19: Monitoring & Alerting          | Pending  |
