@@ -29,8 +29,10 @@ import { resolveOpenClawDocsPath } from "./docs-path.js";
 import { FailoverError, resolveFailoverStatus } from "./failover-error.js";
 import { classifyFailoverReason, isFailoverErrorMessage } from "./pi-embedded-helpers.js";
 import type { EmbeddedPiRunResult } from "./pi-embedded-runner.js";
+import { retryWithBackoff } from "./retry-logic.js";
 import { loadExecApprovalBlockedPatterns } from "./sdk-runner/blocked-patterns.js";
 import { buildSdkMcpServers } from "./sdk-runner/mcp-servers.js";
+import { callWithTimeout, SDK_TIMEOUT_MS } from "./timeout-enforcement.js";
 import { redactRunIdentifier, resolveRunWorkspaceDir } from "./workspace-run.js";
 
 const log = createSubsystemLogger("agent/claude-sdk");
@@ -183,96 +185,116 @@ export async function runSdkAgent(params: SdkRunnerParams): Promise<EmbeddedPiRu
   // Build in-process MCP servers if none provided
   const mcpServers = params.mcpServers ?? (await buildSdkMcpServers());
 
-  // Set up AbortController with timeout
-  const controller = new AbortController();
-  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-  if (params.timeoutMs > 0) {
-    timeoutHandle = setTimeout(() => {
-      log.warn(
-        `sdk timeout: provider=${params.provider} model=${modelId} timeoutMs=${params.timeoutMs}`,
-      );
-      controller.abort();
-    }, params.timeoutMs);
-  }
+  // Wrap SDK execution in retry + timeout layers
+  const executeWithRetryAndTimeout = async (): Promise<{
+    resultText: string;
+    sdkSessionId?: string;
+    resultMessage?: SDKResultMessage;
+    lastError?: string;
+  }> => {
+    return retryWithBackoff(
+      async () => {
+        return callWithTimeout(
+          async (signal) => {
+            // Dynamically import the SDK (it's an ESM package with a .mjs entry)
+            const sdk = await import("@anthropic-ai/claude-agent-sdk");
 
-  try {
-    // Dynamically import the SDK (it's an ESM package with a .mjs entry)
-    const sdk = await import("@anthropic-ai/claude-agent-sdk");
+            // Create AbortController that respects both timeout signal and params.timeoutMs
+            const controller = new AbortController();
 
-    // Build SDK options
-    const sdkOptions: SdkOptions = {
-      model: resolvedModel,
-      cwd: workspaceDir,
-      abortController: controller,
-      permissionMode: "bypassPermissions",
-      allowDangerouslySkipPermissions: true,
-      canUseTool,
-      systemPrompt: systemPrompt
-        ? { type: "preset", preset: "claude_code", append: systemPrompt }
-        : { type: "preset", preset: "claude_code" },
-      persistSession: false,
-      settingSources: [],
-      mcpServers,
-    };
+            // Listen for timeout signal
+            signal.addEventListener("abort", () => {
+              controller.abort();
+            });
 
-    // Resume if session ID is provided
-    if (params.sdkSessionId) {
-      sdkOptions.resume = params.sdkSessionId;
-    }
+            // Build SDK options
+            const sdkOptions: SdkOptions = {
+              model: resolvedModel,
+              cwd: workspaceDir,
+              abortController: controller,
+              permissionMode: "bypassPermissions",
+              allowDangerouslySkipPermissions: true,
+              canUseTool,
+              systemPrompt: systemPrompt
+                ? { type: "preset", preset: "claude_code", append: systemPrompt }
+                : { type: "preset", preset: "claude_code" },
+              persistSession: false,
+              settingSources: [],
+              mcpServers,
+            };
 
-    log.info(
-      `sdk exec: provider=${params.provider} model=${resolvedModel} promptChars=${params.prompt.length}`,
-    );
+            // Resume if session ID is provided
+            if (params.sdkSessionId) {
+              sdkOptions.resume = params.sdkSessionId;
+            }
 
-    // Run the SDK query
-    const queryObj = sdk.query({ prompt: params.prompt, options: sdkOptions });
+            log.info(
+              `sdk exec: provider=${params.provider} model=${resolvedModel} promptChars=${params.prompt.length}`,
+            );
 
-    // Collect result from streaming messages
-    let resultText = "";
-    let sdkSessionId: string | undefined;
-    let resultMessage: SDKResultMessage | undefined;
-    let lastError: string | undefined;
+            // Run the SDK query
+            const queryObj = sdk.query({ prompt: params.prompt, options: sdkOptions });
 
-    for await (const message of queryObj) {
-      const msg = message;
+            // Collect result from streaming messages
+            let resultText = "";
+            let sdkSessionId: string | undefined;
+            let resultMessage: SDKResultMessage | undefined;
+            let lastError: string | undefined;
 
-      switch (msg.type) {
-        case "system":
-          if (msg.subtype === "init") {
-            sdkSessionId = msg.session_id;
-          }
-          break;
+            for await (const message of queryObj) {
+              const msg = message;
 
-        case "assistant": {
-          // Extract text content from assistant message
-          if (msg.message?.content) {
-            for (const block of msg.message.content) {
-              if (
-                typeof block === "object" &&
-                block !== null &&
-                "type" in block &&
-                block.type === "text" &&
-                "text" in block
-              ) {
-                resultText += (block as { text: string }).text;
+              switch (msg.type) {
+                case "system":
+                  if (msg.subtype === "init") {
+                    sdkSessionId = msg.session_id;
+                  }
+                  break;
+
+                case "assistant": {
+                  // Extract text content from assistant message
+                  if (msg.message?.content) {
+                    for (const block of msg.message.content) {
+                      if (
+                        typeof block === "object" &&
+                        block !== null &&
+                        "type" in block &&
+                        block.type === "text" &&
+                        "text" in block
+                      ) {
+                        resultText += (block as { text: string }).text;
+                      }
+                    }
+                  }
+                  // Check for error on the assistant message
+                  if (msg.error) {
+                    lastError = msg.error;
+                  }
+                  break;
+                }
+
+                case "result":
+                  resultMessage = msg;
+                  if (msg.subtype === "success" && "result" in msg) {
+                    resultText = msg.result ?? resultText;
+                  }
+                  break;
               }
             }
-          }
-          // Check for error on the assistant message
-          if (msg.error) {
-            lastError = msg.error;
-          }
-          break;
-        }
 
-        case "result":
-          resultMessage = msg;
-          if (msg.subtype === "success" && "result" in msg) {
-            resultText = msg.result ?? resultText;
-          }
-          break;
-      }
-    }
+            return { resultText, sdkSessionId, resultMessage, lastError };
+          },
+          params.timeoutMs > 0 ? params.timeoutMs : SDK_TIMEOUT_MS,
+          "sdk:query",
+        );
+      },
+      { name: "sdk:query", circuitKey: "agent-sdk" },
+    );
+  };
+
+  try {
+    const { resultText, sdkSessionId, resultMessage, lastError } =
+      await executeWithRetryAndTimeout();
 
     // Handle error results
     if (resultMessage && resultMessage.is_error) {
@@ -352,13 +374,5 @@ export async function runSdkAgent(params: SdkRunnerParams): Promise<EmbeddedPiRu
     }
 
     throw err;
-  } finally {
-    if (timeoutHandle) {
-      clearTimeout(timeoutHandle);
-    }
-    // Ensure controller is aborted to clean up any remaining processes
-    if (!controller.signal.aborted) {
-      controller.abort();
-    }
   }
 }
