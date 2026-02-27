@@ -30,6 +30,7 @@ import { createExecApprovalForwarder } from "../infra/exec-approval-forwarder.js
 import { onHeartbeatEvent } from "../infra/heartbeat-events.js";
 import { startHeartbeatRunner, type HeartbeatRunner } from "../infra/heartbeat-runner.js";
 import { getMachineDisplayName } from "../infra/machine-name.js";
+import { startMemoryMonitoring } from "../infra/memory-monitor.js";
 import { ensureOpenClawCliOnPath } from "../infra/path-env.js";
 import { setGatewaySigusr1RestartPolicy, setPreRestartDeferralCheck } from "../infra/restart.js";
 import {
@@ -681,6 +682,9 @@ export async function startGatewayServer(
     }));
   }
 
+  // Start memory monitoring to detect leaks
+  const stopMemoryMonitoring = minimalTestGateway ? () => {} : startMemoryMonitoring();
+
   // Run gateway_start plugin hook (fire-and-forget)
   if (!minimalTestGateway) {
     const hookRunner = getGlobalHookRunner();
@@ -778,6 +782,7 @@ export async function startGatewayServer(
       skillsChangeUnsub();
       authRateLimiter?.dispose();
       channelHealthMonitor?.stop();
+      stopMemoryMonitoring();
       await close(opts);
     },
   };
