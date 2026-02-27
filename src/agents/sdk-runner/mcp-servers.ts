@@ -15,6 +15,42 @@ import { createSubsystemLogger } from "../../logging/subsystem.js";
 const log = createSubsystemLogger("agent/sdk-mcp");
 
 /**
+ * Error boundary wrapper for MCP tool handlers.
+ * Catches errors and returns structured error response instead of crashing.
+ */
+function withErrorBoundary<T extends Record<string, unknown>>(
+  toolName: string,
+  handler: (input: T) => Promise<{ content: Array<{ type: string; text: string }> }>,
+): (input: T) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+  return async (input: T) => {
+    try {
+      return await handler(input);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      // Log error with full context
+      console.error(`[mcp-error] ${toolName} failed:`, {
+        input,
+        error: errorMessage,
+        stack: errorStack,
+      });
+
+      // Return structured error response
+      return {
+        isError: true,
+        content: [
+          {
+            type: "text",
+            text: `Error in ${toolName}: ${errorMessage}`,
+          },
+        ],
+      };
+    }
+  };
+}
+
+/**
  * Build a map of in-process MCP servers for the SDK session.
  *
  * The KB server uses the same better-sqlite3 database as the stdio MCP server
@@ -42,36 +78,46 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
           "kb_query",
           "Search the knowledge base using keywords (FTS5 full-text search)",
           { query: z.string(), limit: z.number().optional() },
-          async ({ query, limit }) => {
+          withErrorBoundary("kb_query", async ({ query, limit }) => {
             const results = kbQuery(query, limit ?? 5);
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
-          },
+          }),
         ),
-        tool("kb_article", "Get full article content by ID", { id: z.number() }, async ({ id }) => {
-          const article = kbGetArticle(id);
-          return {
-            content: [{ type: "text" as const, text: JSON.stringify(article, null, 2) }],
-          };
-        }),
+        tool(
+          "kb_article",
+          "Get full article content by ID",
+          { id: z.number() },
+          withErrorBoundary("kb_article", async ({ id }) => {
+            const article = kbGetArticle(id);
+            return {
+              content: [{ type: "text" as const, text: JSON.stringify(article, null, 2) }],
+            };
+          }),
+        ),
         tool(
           "kb_recent",
           "List recently ingested articles",
           { limit: z.number().optional() },
-          async ({ limit }) => {
+          withErrorBoundary("kb_recent", async ({ limit }) => {
             const results = kbRecent(limit ?? 10);
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
-          },
+          }),
         ),
-        tool("kb_stats", "Get knowledge base statistics", {}, async () => {
-          const stats = kbStats();
-          return {
-            content: [{ type: "text" as const, text: JSON.stringify(stats, null, 2) }],
-          };
-        }),
+        tool(
+          "kb_stats",
+          "Get knowledge base statistics",
+          {},
+          withErrorBoundary("kb_stats", async () => {
+            const stats = kbStats();
+            return {
+              content: [{ type: "text" as const, text: JSON.stringify(stats, null, 2) }],
+            };
+          }),
+        ),
         tool(
           "kb_entities",
           "Search or list entities in the knowledge graph",
@@ -80,12 +126,12 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             type: z.string().optional(),
             limit: z.number().optional(),
           },
-          async ({ query, type, limit }) => {
+          withErrorBoundary("kb_entities", async ({ query, type, limit }) => {
             const results = await kbEntities(query, type, limit ?? 10);
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
-          },
+          }),
         ),
         tool(
           "kb_graph",
@@ -96,12 +142,12 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             hops: z.number().optional(),
             limit: z.number().optional(),
           },
-          async ({ entity_id, article_id, hops, limit }) => {
+          withErrorBoundary("kb_graph", async ({ entity_id, article_id, hops, limit }) => {
             const results = kbGraph(entity_id, article_id, hops ?? 1, limit ?? 10);
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
-          },
+          }),
         ),
         tool(
           "kb_decisions",
@@ -111,12 +157,12 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             domain: z.string().optional(),
             limit: z.number().optional(),
           },
-          async ({ query, domain, limit }) => {
+          withErrorBoundary("kb_decisions", async ({ query, domain, limit }) => {
             const results = kbDecisions(query, domain, limit ?? 10);
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
-          },
+          }),
         ),
         tool(
           "kb_playbooks",
@@ -126,12 +172,12 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             domain: z.string().optional(),
             limit: z.number().optional(),
           },
-          async ({ query, domain, limit }) => {
+          withErrorBoundary("kb_playbooks", async ({ query, domain, limit }) => {
             const results = kbPlaybooks(query, domain, limit ?? 10);
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
-          },
+          }),
         ),
         tool(
           "kb_contradictions",
@@ -141,34 +187,34 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             article_id: z.number().optional(),
             limit: z.number().optional(),
           },
-          async ({ unresolved_only, article_id, limit }) => {
+          withErrorBoundary("kb_contradictions", async ({ unresolved_only, article_id, limit }) => {
             const results = kbContradictions(unresolved_only ?? true, article_id, limit ?? 10);
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
-          },
+          }),
         ),
         tool(
           "kb_smart_query",
           "Multi-source smart query — searches articles, entities, decisions, playbooks, and contradictions",
           { query: z.string(), agent_type: z.string().optional(), limit: z.number().optional() },
-          async ({ query, agent_type, limit }) => {
+          withErrorBoundary("kb_smart_query", async ({ query, agent_type, limit }) => {
             const results = await kbSmartQuery(query, agent_type, limit ?? 5);
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
-          },
+          }),
         ),
         tool(
           "kb_communities",
           "List entity communities — clusters of related knowledge",
           { community_id: z.number().optional(), limit: z.number().optional() },
-          async ({ community_id, limit }) => {
+          withErrorBoundary("kb_communities", async ({ community_id, limit }) => {
             const results = kbCommunities(community_id, limit ?? 10);
             return {
               content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }],
             };
-          },
+          }),
         ),
       ],
     });
@@ -184,7 +230,7 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
           "system_info",
           "Get basic system information (hostname, platform, uptime, memory)",
           {},
-          async () => {
+          withErrorBoundary("system_info", async () => {
             const info = {
               hostname: os.hostname(),
               platform: os.platform(),
@@ -197,7 +243,7 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             return {
               content: [{ type: "text" as const, text: JSON.stringify(info, null, 2) }],
             };
-          },
+          }),
         ),
       ],
     });
