@@ -6,7 +6,7 @@
  * catch typos like "modles" instead of "models".
  */
 
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync, statSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
@@ -155,12 +155,14 @@ export function loadConfigWithValidationSync<T>(
         const parsed = JSON.parse(raw);
         const validated = schema.parse(parsed);
 
-        // Found a valid backup - log warning and return
-        console.warn(`[config-validator] Config ${path} invalid, using backup ${backupPath}`);
+        // Found a valid backup - log warning and restore
+        console.warn(
+          `[config-validator] Config ${path} invalid, restoring from backup ${backupPath}`,
+        );
 
-        // Note: Actual file restore would happen here in production
-        // For now, just return the validated backup config
-        // TODO: Implement actual restore (requires fs.writeFileSync + rotateConfigBackups)
+        // Write validated backup back to main config file
+        // Note: Skip rotation in sync version to avoid async complexity
+        writeFileSync(path, JSON.stringify(validated, null, 2), "utf8");
 
         return validated;
       } catch {
@@ -225,12 +227,14 @@ export async function loadConfigWithValidation<T>(
         const parsed = JSON.parse(raw);
         const validated = schema.parse(parsed);
 
-        // Found a valid backup - log warning and return
-        console.warn(`[config-validator] Config ${path} invalid, using backup ${backupPath}`);
+        // Found a valid backup - log warning and restore
+        console.warn(
+          `[config-validator] Config ${path} invalid, restoring from backup ${backupPath}`,
+        );
 
-        // Note: Actual file restore would happen here in production
-        // For now, just return the validated backup config
-        // TODO: Implement actual restore (requires fs.writeFile + rotateConfigBackups)
+        // Write validated backup back to main config file
+        // Note: Sync version doesn't rotate to avoid async complexity
+        writeFileSync(path, JSON.stringify(validated, null, 2), "utf8");
 
         return validated;
       } catch {
