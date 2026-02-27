@@ -213,7 +213,7 @@ export function logIntegrationFailure(params: {
       });
 
       const stmt = db.prepare(`
-        INSERT INTO events (timestamp, category, event_type, metadata)
+        INSERT INTO events (timestamp, category, action, metadata)
         VALUES (?, 'integration', 'failure', ?)
       `);
 

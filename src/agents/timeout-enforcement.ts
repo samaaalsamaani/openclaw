@@ -110,7 +110,7 @@ function logTimeout(params: { integration: string; timeoutMs: number; timestamp:
       });
 
       const stmt = db.prepare(`
-        INSERT INTO events (timestamp, category, event_type, metadata)
+        INSERT INTO events (timestamp, category, action, metadata)
         VALUES (?, 'integration', 'timeout', ?)
       `);
 
