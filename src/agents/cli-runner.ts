@@ -28,6 +28,7 @@ import { resolveOpenClawDocsPath } from "./docs-path.js";
 import { FailoverError, resolveFailoverStatus } from "./failover-error.js";
 import { classifyFailoverReason, isFailoverErrorMessage } from "./pi-embedded-helpers.js";
 import type { EmbeddedPiRunResult } from "./pi-embedded-runner.js";
+import { retryWithBackoff } from "./retry-logic.js";
 import { redactRunIdentifier, resolveRunWorkspaceDir } from "./workspace-run.js";
 
 const log = createSubsystemLogger("agent/claude-cli");
@@ -179,146 +180,152 @@ export async function runCliAgent(params: {
   const queueKey = serialize ? backendResolved.id : `${backendResolved.id}:${params.runId}`;
 
   try {
-    const output = await enqueueCliRun(queueKey, async () => {
-      log.info(
-        `cli exec: provider=${params.provider} model=${normalizedModel} promptChars=${params.prompt.length}`,
-      );
-      const logOutputText = isTruthyEnvValue(process.env.OPENCLAW_CLAUDE_CLI_LOG_OUTPUT);
-      if (logOutputText) {
-        const logArgs: string[] = [];
-        for (let i = 0; i < args.length; i += 1) {
-          const arg = args[i] ?? "";
-          if (arg === backend.systemPromptArg) {
-            const systemPromptValue = args[i + 1] ?? "";
-            logArgs.push(arg, `<systemPrompt:${systemPromptValue.length} chars>`);
-            i += 1;
-            continue;
-          }
-          if (arg === backend.sessionArg) {
-            logArgs.push(arg, args[i + 1] ?? "");
-            i += 1;
-            continue;
-          }
-          if (arg === backend.modelArg) {
-            logArgs.push(arg, args[i + 1] ?? "");
-            i += 1;
-            continue;
-          }
-          if (arg === backend.imageArg) {
-            logArgs.push(arg, "<image>");
-            i += 1;
-            continue;
-          }
-          logArgs.push(arg);
-        }
-        if (argsPrompt) {
-          const promptIndex = logArgs.indexOf(argsPrompt);
-          if (promptIndex >= 0) {
-            logArgs[promptIndex] = `<prompt:${argsPrompt.length} chars>`;
-          }
-        }
-        log.info(`cli argv: ${backend.command} ${logArgs.join(" ")}`);
-      }
-
-      const env = (() => {
-        const next = { ...process.env, ...backend.env };
-        for (const key of backend.clearEnv ?? []) {
-          delete next[key];
-        }
-        return next;
-      })();
-      const noOutputTimeoutMs = resolveCliNoOutputTimeoutMs({
-        backend,
-        timeoutMs: params.timeoutMs,
-        useResume,
-      });
-      const supervisor = getProcessSupervisor();
-      const scopeKey = buildCliSupervisorScopeKey({
-        backend,
-        backendId: backendResolved.id,
-        cliSessionId: useResume ? cliSessionIdToSend : undefined,
-      });
-
-      const managedRun = await supervisor.spawn({
-        sessionId: params.sessionId,
-        backendId: backendResolved.id,
-        scopeKey,
-        replaceExistingScope: Boolean(useResume && scopeKey),
-        mode: "child",
-        argv: [backend.command, ...args],
-        timeoutMs: params.timeoutMs,
-        noOutputTimeoutMs,
-        cwd: workspaceDir,
-        env,
-        input: stdinPayload,
-      });
-      const result = await managedRun.wait();
-
-      const stdout = result.stdout.trim();
-      const stderr = result.stderr.trim();
-      if (logOutputText) {
-        if (stdout) {
-          log.info(`cli stdout:\n${stdout}`);
-        }
-        if (stderr) {
-          log.info(`cli stderr:\n${stderr}`);
-        }
-      }
-      if (shouldLogVerbose()) {
-        if (stdout) {
-          log.debug(`cli stdout:\n${stdout}`);
-        }
-        if (stderr) {
-          log.debug(`cli stderr:\n${stderr}`);
-        }
-      }
-
-      if (result.exitCode !== 0 || result.reason !== "exit") {
-        if (result.reason === "no-output-timeout" || result.noOutputTimedOut) {
-          const timeoutReason = `CLI produced no output for ${Math.round(noOutputTimeoutMs / 1000)}s and was terminated.`;
-          log.warn(
-            `cli watchdog timeout: provider=${params.provider} model=${modelId} session=${cliSessionIdToSend ?? params.sessionId} noOutputTimeoutMs=${noOutputTimeoutMs} pid=${managedRun.pid ?? "unknown"}`,
+    // Wrap CLI subprocess execution in retry layer for transient failures
+    // Note: FailoverErrors (timeouts, auth errors, etc.) are classified as non-retryable and fail immediately
+    const output = await retryWithBackoff(
+      async () =>
+        enqueueCliRun(queueKey, async () => {
+          log.info(
+            `cli exec: provider=${params.provider} model=${normalizedModel} promptChars=${params.prompt.length}`,
           );
-          throw new FailoverError(timeoutReason, {
-            reason: "timeout",
-            provider: params.provider,
-            model: modelId,
-            status: resolveFailoverStatus("timeout"),
+          const logOutputText = isTruthyEnvValue(process.env.OPENCLAW_CLAUDE_CLI_LOG_OUTPUT);
+          if (logOutputText) {
+            const logArgs: string[] = [];
+            for (let i = 0; i < args.length; i += 1) {
+              const arg = args[i] ?? "";
+              if (arg === backend.systemPromptArg) {
+                const systemPromptValue = args[i + 1] ?? "";
+                logArgs.push(arg, `<systemPrompt:${systemPromptValue.length} chars>`);
+                i += 1;
+                continue;
+              }
+              if (arg === backend.sessionArg) {
+                logArgs.push(arg, args[i + 1] ?? "");
+                i += 1;
+                continue;
+              }
+              if (arg === backend.modelArg) {
+                logArgs.push(arg, args[i + 1] ?? "");
+                i += 1;
+                continue;
+              }
+              if (arg === backend.imageArg) {
+                logArgs.push(arg, "<image>");
+                i += 1;
+                continue;
+              }
+              logArgs.push(arg);
+            }
+            if (argsPrompt) {
+              const promptIndex = logArgs.indexOf(argsPrompt);
+              if (promptIndex >= 0) {
+                logArgs[promptIndex] = `<prompt:${argsPrompt.length} chars>`;
+              }
+            }
+            log.info(`cli argv: ${backend.command} ${logArgs.join(" ")}`);
+          }
+
+          const env = (() => {
+            const next = { ...process.env, ...backend.env };
+            for (const key of backend.clearEnv ?? []) {
+              delete next[key];
+            }
+            return next;
+          })();
+          const noOutputTimeoutMs = resolveCliNoOutputTimeoutMs({
+            backend,
+            timeoutMs: params.timeoutMs,
+            useResume,
           });
-        }
-        if (result.reason === "overall-timeout") {
-          const timeoutReason = `CLI exceeded timeout (${Math.round(params.timeoutMs / 1000)}s) and was terminated.`;
-          throw new FailoverError(timeoutReason, {
-            reason: "timeout",
-            provider: params.provider,
-            model: modelId,
-            status: resolveFailoverStatus("timeout"),
+          const supervisor = getProcessSupervisor();
+          const scopeKey = buildCliSupervisorScopeKey({
+            backend,
+            backendId: backendResolved.id,
+            cliSessionId: useResume ? cliSessionIdToSend : undefined,
           });
-        }
-        const err = stderr || stdout || "CLI failed.";
-        const reason = classifyFailoverReason(err) ?? "unknown";
-        const status = resolveFailoverStatus(reason);
-        throw new FailoverError(err, {
-          reason,
-          provider: params.provider,
-          model: modelId,
-          status,
-        });
-      }
 
-      const outputMode = useResume ? (backend.resumeOutput ?? backend.output) : backend.output;
+          const managedRun = await supervisor.spawn({
+            sessionId: params.sessionId,
+            backendId: backendResolved.id,
+            scopeKey,
+            replaceExistingScope: Boolean(useResume && scopeKey),
+            mode: "child",
+            argv: [backend.command, ...args],
+            timeoutMs: params.timeoutMs,
+            noOutputTimeoutMs,
+            cwd: workspaceDir,
+            env,
+            input: stdinPayload,
+          });
+          const result = await managedRun.wait();
 
-      if (outputMode === "text") {
-        return { text: stdout, sessionId: undefined };
-      }
-      if (outputMode === "jsonl") {
-        const parsed = parseCliJsonl(stdout, backend);
-        return parsed ?? { text: stdout };
-      }
+          const stdout = result.stdout.trim();
+          const stderr = result.stderr.trim();
+          if (logOutputText) {
+            if (stdout) {
+              log.info(`cli stdout:\n${stdout}`);
+            }
+            if (stderr) {
+              log.info(`cli stderr:\n${stderr}`);
+            }
+          }
+          if (shouldLogVerbose()) {
+            if (stdout) {
+              log.debug(`cli stdout:\n${stdout}`);
+            }
+            if (stderr) {
+              log.debug(`cli stderr:\n${stderr}`);
+            }
+          }
 
-      const parsed = parseCliJson(stdout, backend);
-      return parsed ?? { text: stdout };
-    });
+          if (result.exitCode !== 0 || result.reason !== "exit") {
+            if (result.reason === "no-output-timeout" || result.noOutputTimedOut) {
+              const timeoutReason = `CLI produced no output for ${Math.round(noOutputTimeoutMs / 1000)}s and was terminated.`;
+              log.warn(
+                `cli watchdog timeout: provider=${params.provider} model=${modelId} session=${cliSessionIdToSend ?? params.sessionId} noOutputTimeoutMs=${noOutputTimeoutMs} pid=${managedRun.pid ?? "unknown"}`,
+              );
+              throw new FailoverError(timeoutReason, {
+                reason: "timeout",
+                provider: params.provider,
+                model: modelId,
+                status: resolveFailoverStatus("timeout"),
+              });
+            }
+            if (result.reason === "overall-timeout") {
+              const timeoutReason = `CLI exceeded timeout (${Math.round(params.timeoutMs / 1000)}s) and was terminated.`;
+              throw new FailoverError(timeoutReason, {
+                reason: "timeout",
+                provider: params.provider,
+                model: modelId,
+                status: resolveFailoverStatus("timeout"),
+              });
+            }
+            const err = stderr || stdout || "CLI failed.";
+            const reason = classifyFailoverReason(err) ?? "unknown";
+            const status = resolveFailoverStatus(reason);
+            throw new FailoverError(err, {
+              reason,
+              provider: params.provider,
+              model: modelId,
+              status,
+            });
+          }
+
+          const outputMode = useResume ? (backend.resumeOutput ?? backend.output) : backend.output;
+
+          if (outputMode === "text") {
+            return { text: stdout, sessionId: undefined };
+          }
+          if (outputMode === "jsonl") {
+            const parsed = parseCliJsonl(stdout, backend);
+            return parsed ?? { text: stdout };
+          }
+
+          const parsed = parseCliJson(stdout, backend);
+          return parsed ?? { text: stdout };
+        }),
+      { name: "cli:subprocess", circuitKey: `cli-${params.provider}` },
+    );
 
     const text = output.text?.trim();
     const payloads = text ? [{ text }] : undefined;

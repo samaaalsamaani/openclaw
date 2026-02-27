@@ -59,13 +59,14 @@ describe("retry-logic", () => {
       expect(isRetryableError(error)).toBe(false);
     });
 
-    it("respects FailoverError classification (timeout → retryable)", () => {
+    it("respects FailoverError classification (timeout → not retryable)", () => {
       const error = new FailoverError("Timeout", {
         reason: "timeout",
         provider: "test",
         model: "test-model",
       });
-      expect(isRetryableError(error)).toBe(true);
+      // Timeouts are permanent failures (operation was killed after exceeding limit)
+      expect(isRetryableError(error)).toBe(false);
     });
 
     it("respects FailoverError classification (auth → not retryable)", () => {

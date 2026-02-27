@@ -47,7 +47,9 @@ const circuitBreakers = new Map<string, CircuitBreaker>();
 export function isRetryableError(error: unknown): boolean {
   // Handle FailoverError classification
   if (error instanceof FailoverError) {
-    const retryableReasons: Set<FailoverReason> = new Set(["timeout", "unknown"]);
+    // Timeouts are permanent failures (operation was killed after exceeding limit)
+    // Only retry truly unknown errors that might be transient
+    const retryableReasons: Set<FailoverReason> = new Set(["unknown"]);
     return retryableReasons.has(error.reason);
   }
 
