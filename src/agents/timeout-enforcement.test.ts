@@ -30,7 +30,7 @@ describe("timeout-enforcement", () => {
       expect(operation).toHaveBeenCalledTimes(1);
     });
 
-    it("aborts and throws when operation exceeds timeout", async () => {
+    it("aborts and throws when operation exceeds timeout", { timeout: 1000 }, async () => {
       let abortSignalReceived: AbortSignal | undefined;
 
       const operation = vi.fn().mockImplementation((signal: AbortSignal): Promise<string> => {
@@ -51,7 +51,7 @@ describe("timeout-enforcement", () => {
       );
 
       expect(abortSignalReceived?.aborted).toBe(true);
-    }, 1000);
+    });
 
     it("passes AbortSignal to operation function", async () => {
       let receivedSignal: AbortSignal | undefined;
@@ -93,7 +93,7 @@ describe("timeout-enforcement", () => {
       clearTimeoutSpy.mockRestore();
     });
 
-    it("clears timeout handle on timeout (no leak)", async () => {
+    it("clears timeout handle on timeout (no leak)", { timeout: 1000 }, async () => {
       const clearTimeoutSpy = vi.spyOn(global, "clearTimeout");
 
       const operation = vi.fn().mockImplementation((signal: AbortSignal): Promise<string> => {
@@ -113,7 +113,7 @@ describe("timeout-enforcement", () => {
       expect(clearTimeoutSpy).toHaveBeenCalled();
 
       clearTimeoutSpy.mockRestore();
-    }, 1000);
+    });
 
     it.skip("logs timeout error to observability with correct metadata", async () => {
       // TODO: This test requires better-sqlite3 native bindings to be built
