@@ -364,9 +364,9 @@ Plans:
 
 Plans:
 
-- [ ] 16-01: Add comprehensive error handling and process crash recovery
-- [ ] 16-02: Fix memory leaks and resource cleanup in MCP servers and embedding server
-- [ ] 16-03: Harden launchd configurations with KeepAlive, StandardErrorPath, proper ExitTimeout
+- [ ] 16-01-PLAN.md — Error handling, crash recovery logging, MCP error boundaries
+- [ ] 16-02-PLAN.md — Memory leak detection, circuit breakers, embedding server recycling
+- [ ] 16-03-PLAN.md — launchd hardening (KeepAlive, ThrottleInterval, ExitTimeout, logging)
 
 ### Phase 17: Integration Reliability
 
