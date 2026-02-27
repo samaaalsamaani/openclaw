@@ -289,15 +289,36 @@ async function checkDatabases(): Promise<DatabaseStatus[]> {
     },
   ];
 
+  // Try to load better-sqlite3 once for all database checks
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let Database: any = null;
+  try {
+    const imported = await import("better-sqlite3");
+    Database = imported.default;
+  } catch {
+    // better-sqlite3 not available (native bindings missing)
+    // Will skip WAL checks but still verify file existence
+  }
+
   for (const db of databases) {
     try {
       // Check if file exists
       const stat = statSync(db.path);
       const sizeMB = Math.round((stat.size / 1048576) * 10) / 10; // Round to 1 decimal
 
+      if (!Database) {
+        // better-sqlite3 not available - mark as accessible but no WAL check
+        statuses.push({
+          name: db.name,
+          exists: true,
+          accessible: true,
+          wal_enabled: undefined, // Cannot check without better-sqlite3
+          size_mb: sizeMB,
+        });
+        continue;
+      }
+
       // Try to open database and check WAL mode
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const Database = require("better-sqlite3");
       const dbHandle = new Database(db.path, { readonly: true });
 
       const walResult = dbHandle.pragma("journal_mode", { simple: true });
@@ -446,12 +467,11 @@ function deriveOverallStatus(
  * Log health check results to observability.sqlite.
  * Gracefully degrades if database unavailable.
  */
-function logHealthCheckToObservability(report: HealthReport): void {
+async function logHealthCheckToObservability(report: HealthReport): Promise<void> {
   try {
     const dbPath = join(process.env.HOME ?? "/tmp", ".openclaw", "observability.sqlite");
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Database = require("better-sqlite3");
+    const { default: Database } = await import("better-sqlite3");
     const db = new Database(dbPath);
     db.pragma("busy_timeout = 5000");
 
@@ -516,8 +536,8 @@ export async function checkSystemHealth(): Promise<HealthReport> {
     overall,
   };
 
-  // Log to observability (async, non-blocking)
-  logHealthCheckToObservability(report);
+  // Log to observability
+  await logHealthCheckToObservability(report);
 
   return report;
 }
