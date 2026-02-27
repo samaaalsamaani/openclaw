@@ -137,76 +137,75 @@ Requirements for v2 release. Builds on v1 infrastructure (MCP mesh, KB, task rou
 
 Which phases cover which requirements. Updated during roadmap creation.
 
-| Requirement | Phase                                | Status |
-| ----------- | ------------------------------------ | ------ |
-| INFRA-01    | Phase 1: MCP Mesh Foundation         | Done   |
-| INFRA-02    | Phase 1: MCP Mesh Foundation         | Done   |
-| INFRA-03    | Phase 1: MCP Mesh Foundation         | Done   |
-| INFRA-04    | Phase 1: MCP Mesh Foundation         | Done   |
-| INFRA-05    | Phase 1: MCP Mesh Foundation         | Done   |
-| INFRA-06    | Phase 1: MCP Mesh Foundation         | Done   |
-| INFRA-07    | Phase 1: MCP Mesh Foundation         | Done   |
-| INFRA-08    | Phase 2: Heartbeat & KB Seeding      | Done   |
-| SDK-01      | Phase 3: Agent SDK Integration       | Done   |
-| SDK-02      | Phase 3: Agent SDK Integration       | Done   |
-| SDK-03      | Phase 3: Agent SDK Integration       | Done   |
-| SDK-04      | Phase 3: Agent SDK Integration       | Done   |
-| SDK-05      | Phase 3: Agent SDK Integration       | Done   |
-| SDK-06      | Phase 3: Agent SDK Integration       | Done   |
-| SDK-07      | Phase 3: Agent SDK Integration       | Done   |
-| ROUT-01     | Phase 6: Task Router                 | Done   |
-| ROUT-02     | Phase 6: Task Router                 | Done   |
-| ROUT-03     | Phase 6: Task Router                 | Done   |
-| ROUT-04     | Phase 6: Task Router                 | Done   |
-| ROUT-05     | Phase 6: Task Router                 | Done   |
-| ROUT-06     | Phase 6: Task Router                 | Done   |
-| ROUT-07     | Phase 6: Task Router                 | Done   |
-| SKIL-01     | Phase 4: Claude Code Native Skills   | Done   |
-| SKIL-02     | Phase 4: Claude Code Native Skills   | Done   |
-| SKIL-03     | Phase 4: Claude Code Native Skills   | Done   |
-| SKIL-04     | Phase 4: Claude Code Native Skills   | Done   |
-| SKIL-05     | Phase 4: Claude Code Native Skills   | Done   |
-| SKIL-06     | Phase 4: Claude Code Native Skills   | Done   |
-| SKIL-07     | Phase 4: Claude Code Native Skills   | Done   |
-| SKIL-08     | Phase 4: Claude Code Native Skills   | Done   |
-| HOOK-01     | Phase 5: Hooks & Auto-Ingestion      | Done   |
-| HOOK-02     | Phase 5: Hooks & Auto-Ingestion      | Done   |
-| HOOK-03     | Phase 5: Hooks & Auto-Ingestion      | Done   |
-| HOOK-04     | Phase 5: Hooks & Auto-Ingestion      | Done   |
-| HOOK-05     | Phase 5: Hooks & Auto-Ingestion      | Done   |
-| MEM-01      | Phase 2: Heartbeat & KB Seeding      | Done   |
-| MEM-02      | Phase 5: Hooks & Auto-Ingestion      | Done   |
-| MEM-03      | Phase 8: Cross-Session Knowledge     | Done   |
-| MEM-04      | Phase 8: Cross-Session Knowledge     | Done   |
-| CONT-01     | Phase 7: Content Automation Pipeline | Done   |
-| CONT-02     | Phase 7: Content Automation Pipeline | Done   |
-| CONT-03     | Phase 7: Content Automation Pipeline | Done   |
-| CONT-04     | Phase 7: Content Automation Pipeline | Done   |
-| REVW-01     | Phase 9: Dual-Brain Code Review      | Done   |
-| REVW-02     | Phase 9: Dual-Brain Code Review      | Done   |
-| REVW-03     | Phase 9: Dual-Brain Code Review      | Done   |
-
-| OBSV-01 | Phase 10: Observability Foundation | Pending |
-| OBSV-02 | Phase 10: Observability Foundation | Done |
-| OBSV-03 | Phase 10: Observability Foundation | Done |
-| OBSV-04 | Phase 15: Dashboard & Self-Reflection| Done |
-| FILE-01 | Phase 11: File Automation | Done |
-| FILE-02 | Phase 11: File Automation | Done |
-| FILE-03 | Phase 11: File Automation | Done |
-| FILE-04 | Phase 11: File Automation | Done |
-| FILE-05 | Phase 11: File Automation | Done |
-| AUTO-01 | Phase 12: Progressive Autonomy | Done |
-| AUTO-02 | Phase 12: Progressive Autonomy | Done |
-| AUTO-03 | Phase 12: Progressive Autonomy | Done |
-| AUTO-04 | Phase 12: Progressive Autonomy | Done |
-| AUTO-05 | Phase 12: Progressive Autonomy | Done |
-| UNIF-01 | Phase 13: Unified CLI | Done |
-| UNIF-02 | Phase 13: Unified CLI | Done |
-| UNIF-03 | Phase 13: Unified CLI | Done |
-| TEAM-01 | Phase 14: Agent Teams | Done |
-| TEAM-02 | Phase 14: Agent Teams | Done |
-| TEAM-03 | Phase 14: Agent Teams | Done |
-| TEAM-04 | Phase 14: Agent Teams | Done |
+| Requirement | Phase                                 | Status |
+| ----------- | ------------------------------------- | ------ |
+| INFRA-01    | Phase 1: MCP Mesh Foundation          | Done   |
+| INFRA-02    | Phase 1: MCP Mesh Foundation          | Done   |
+| INFRA-03    | Phase 1: MCP Mesh Foundation          | Done   |
+| INFRA-04    | Phase 1: MCP Mesh Foundation          | Done   |
+| INFRA-05    | Phase 1: MCP Mesh Foundation          | Done   |
+| INFRA-06    | Phase 1: MCP Mesh Foundation          | Done   |
+| INFRA-07    | Phase 1: MCP Mesh Foundation          | Done   |
+| INFRA-08    | Phase 2: Heartbeat & KB Seeding       | Done   |
+| SDK-01      | Phase 3: Agent SDK Integration        | Done   |
+| SDK-02      | Phase 3: Agent SDK Integration        | Done   |
+| SDK-03      | Phase 3: Agent SDK Integration        | Done   |
+| SDK-04      | Phase 3: Agent SDK Integration        | Done   |
+| SDK-05      | Phase 3: Agent SDK Integration        | Done   |
+| SDK-06      | Phase 3: Agent SDK Integration        | Done   |
+| SDK-07      | Phase 3: Agent SDK Integration        | Done   |
+| ROUT-01     | Phase 6: Task Router                  | Done   |
+| ROUT-02     | Phase 6: Task Router                  | Done   |
+| ROUT-03     | Phase 6: Task Router                  | Done   |
+| ROUT-04     | Phase 6: Task Router                  | Done   |
+| ROUT-05     | Phase 6: Task Router                  | Done   |
+| ROUT-06     | Phase 6: Task Router                  | Done   |
+| ROUT-07     | Phase 6: Task Router                  | Done   |
+| SKIL-01     | Phase 4: Claude Code Native Skills    | Done   |
+| SKIL-02     | Phase 4: Claude Code Native Skills    | Done   |
+| SKIL-03     | Phase 4: Claude Code Native Skills    | Done   |
+| SKIL-04     | Phase 4: Claude Code Native Skills    | Done   |
+| SKIL-05     | Phase 4: Claude Code Native Skills    | Done   |
+| SKIL-06     | Phase 4: Claude Code Native Skills    | Done   |
+| SKIL-07     | Phase 4: Claude Code Native Skills    | Done   |
+| SKIL-08     | Phase 4: Claude Code Native Skills    | Done   |
+| HOOK-01     | Phase 5: Hooks & Auto-Ingestion       | Done   |
+| HOOK-02     | Phase 5: Hooks & Auto-Ingestion       | Done   |
+| HOOK-03     | Phase 5: Hooks & Auto-Ingestion       | Done   |
+| HOOK-04     | Phase 5: Hooks & Auto-Ingestion       | Done   |
+| HOOK-05     | Phase 5: Hooks & Auto-Ingestion       | Done   |
+| MEM-01      | Phase 2: Heartbeat & KB Seeding       | Done   |
+| MEM-02      | Phase 5: Hooks & Auto-Ingestion       | Done   |
+| MEM-03      | Phase 8: Cross-Session Knowledge      | Done   |
+| MEM-04      | Phase 8: Cross-Session Knowledge      | Done   |
+| CONT-01     | Phase 7: Content Automation Pipeline  | Done   |
+| CONT-02     | Phase 7: Content Automation Pipeline  | Done   |
+| CONT-03     | Phase 7: Content Automation Pipeline  | Done   |
+| CONT-04     | Phase 7: Content Automation Pipeline  | Done   |
+| REVW-01     | Phase 9: Dual-Brain Code Review       | Done   |
+| REVW-02     | Phase 9: Dual-Brain Code Review       | Done   |
+| REVW-03     | Phase 9: Dual-Brain Code Review       | Done   |
+| OBSV-01     | Phase 10: Observability Foundation    | Done   |
+| OBSV-02     | Phase 10: Observability Foundation    | Done   |
+| OBSV-03     | Phase 10: Observability Foundation    | Done   |
+| OBSV-04     | Phase 15: Dashboard & Self-Reflection | Done   |
+| FILE-01     | Phase 11: File Automation             | Done   |
+| FILE-02     | Phase 11: File Automation             | Done   |
+| FILE-03     | Phase 11: File Automation             | Done   |
+| FILE-04     | Phase 11: File Automation             | Done   |
+| FILE-05     | Phase 11: File Automation             | Done   |
+| AUTO-01     | Phase 12: Progressive Autonomy        | Done   |
+| AUTO-02     | Phase 12: Progressive Autonomy        | Done   |
+| AUTO-03     | Phase 12: Progressive Autonomy        | Done   |
+| AUTO-04     | Phase 12: Progressive Autonomy        | Done   |
+| AUTO-05     | Phase 12: Progressive Autonomy        | Done   |
+| UNIF-01     | Phase 13: Unified CLI                 | Done   |
+| UNIF-02     | Phase 13: Unified CLI                 | Done   |
+| UNIF-03     | Phase 13: Unified CLI                 | Done   |
+| TEAM-01     | Phase 14: Agent Teams                 | Done   |
+| TEAM-02     | Phase 14: Agent Teams                 | Done   |
+| TEAM-03     | Phase 14: Agent Teams                 | Done   |
+| TEAM-04     | Phase 14: Agent Teams                 | Done   |
 
 **Coverage:**
 
@@ -278,7 +277,63 @@ Which phases cover which requirements. Updated during roadmap creation.
 - [ ] **CHANGE-06**: Pre-commit hooks validate scripts (syntax check, lint)
 - [ ] **CHANGE-07**: Version locking for critical dependencies (prevent breaking updates)
 
+## v3.0 Traceability
+
+| Requirement | Phase                                    | Status  |
+| ----------- | ---------------------------------------- | ------- |
+| SERV-01     | Phase 16: Service Hardening              | Pending |
+| SERV-02     | Phase 16: Service Hardening              | Pending |
+| SERV-03     | Phase 16: Service Hardening              | Pending |
+| SERV-04     | Phase 16: Service Hardening              | Pending |
+| SERV-05     | Phase 16: Service Hardening              | Pending |
+| SERV-06     | Phase 16: Service Hardening              | Pending |
+| INTEG-01    | Phase 17: Integration Reliability        | Pending |
+| INTEG-02    | Phase 17: Integration Reliability        | Pending |
+| INTEG-03    | Phase 17: Integration Reliability        | Pending |
+| INTEG-04    | Phase 17: Integration Reliability        | Pending |
+| INTEG-05    | Phase 17: Integration Reliability        | Pending |
+| INTEG-06    | Phase 17: Integration Reliability        | Pending |
+| DATA-01     | Phase 18: Data Integrity & Config Safety | Pending |
+| DATA-02     | Phase 18: Data Integrity & Config Safety | Pending |
+| DATA-03     | Phase 18: Data Integrity & Config Safety | Pending |
+| DATA-04     | Phase 18: Data Integrity & Config Safety | Pending |
+| DATA-05     | Phase 18: Data Integrity & Config Safety | Pending |
+| DATA-06     | Phase 18: Data Integrity & Config Safety | Pending |
+| DATA-07     | Phase 18: Data Integrity & Config Safety | Pending |
+| OBS-01      | Phase 19: Monitoring & Alerting          | Pending |
+| OBS-02      | Phase 19: Monitoring & Alerting          | Pending |
+| OBS-03      | Phase 19: Monitoring & Alerting          | Pending |
+| OBS-04      | Phase 19: Monitoring & Alerting          | Pending |
+| OBS-05      | Phase 19: Monitoring & Alerting          | Pending |
+| OBS-06      | Phase 19: Monitoring & Alerting          | Pending |
+| OBS-07      | Phase 19: Monitoring & Alerting          | Pending |
+| REC-01      | Phase 20: Recovery & Runbooks            | Pending |
+| REC-02      | Phase 20: Recovery & Runbooks            | Pending |
+| REC-03      | Phase 20: Recovery & Runbooks            | Pending |
+| REC-04      | Phase 20: Recovery & Runbooks            | Pending |
+| REC-05      | Phase 20: Recovery & Runbooks            | Pending |
+| REC-06      | Phase 20: Recovery & Runbooks            | Pending |
+| CHANGE-01   | Phase 21: Change Management              | Pending |
+| CHANGE-02   | Phase 21: Change Management              | Pending |
+| CHANGE-03   | Phase 21: Change Management              | Pending |
+| CHANGE-04   | Phase 21: Change Management              | Pending |
+| CHANGE-05   | Phase 21: Change Management              | Pending |
+| CHANGE-06   | Phase 21: Change Management              | Pending |
+| CHANGE-07   | Phase 21: Change Management              | Pending |
+
+**v3.0 Coverage:**
+
+- Service Reliability: 6 requirements → Phase 16
+- Integration Reliability: 6 requirements → Phase 17
+- Data Integrity: 7 requirements → Phase 18
+- Observability & Monitoring: 7 requirements → Phase 19
+- Recovery Procedures: 6 requirements → Phase 20
+- Change Safety: 7 requirements → Phase 21
+- Total: 39 requirements mapped to 6 phases
+- Unmapped: 0
+- Coverage: 100%
+
 ---
 
 _Requirements defined: 2026-02-22 (v1/v2), 2026-02-27 (v3.0)_
-_Last updated: 2026-02-27 — v3.0 stabilization requirements added (37 requirements across 6 groups)_
+_Last updated: 2026-02-27 — v3.0 stabilization requirements added (37 requirements across 6 groups), traceability complete_
