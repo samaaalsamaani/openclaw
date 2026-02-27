@@ -12,6 +12,7 @@ import { loadConfig } from "../config/config.js";
 import { emitAgentEvent } from "../infra/agent-events.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runCliAgent } from "./cli-runner.js";
+import { loadLlmConfig, resolveRoutingVerifier } from "./llm-config-reader.js";
 import type { TaskDomain } from "./task-classifier.js";
 
 const log = createSubsystemLogger("routing/verification");
@@ -39,7 +40,7 @@ export type VerificationResult = {
 // ── Verifier table: which brain reviews which domain ────────────────
 // Each domain is verified by a DIFFERENT brain to catch blind spots.
 
-const VERIFIER_TABLE: Record<TaskDomain, { provider: string; model: string }> = {
+const HARDCODED_VERIFIER_TABLE: Record<TaskDomain, { provider: string; model: string }> = {
   code: { provider: "anthropic", model: "claude-sonnet-4-6" },
   creative: { provider: "anthropic", model: "claude-sonnet-4-6" },
   analysis: { provider: "anthropic", model: "claude-sonnet-4-6" },
@@ -48,6 +49,24 @@ const VERIFIER_TABLE: Record<TaskDomain, { provider: string; model: string }> = 
   schedule: { provider: "anthropic", model: "claude-sonnet-4-6" },
   search: { provider: "anthropic", model: "claude-sonnet-4-6" },
 };
+
+function buildVerifierTable(): Record<TaskDomain, { provider: string; model: string }> {
+  const config = loadLlmConfig();
+  if (!config) {
+    return HARDCODED_VERIFIER_TABLE;
+  }
+  const result = { ...HARDCODED_VERIFIER_TABLE };
+  for (const domain of Object.keys(result) as TaskDomain[]) {
+    const resolved = resolveRoutingVerifier(config, domain);
+    if (resolved) {
+      result[domain] = { provider: resolved.provider, model: resolved.model };
+    }
+  }
+  return result;
+}
+
+const VERIFIER_TABLE: Record<TaskDomain, { provider: string; model: string }> =
+  buildVerifierTable();
 
 // ── Gate: only verify high-impact domains with high confidence ──────
 

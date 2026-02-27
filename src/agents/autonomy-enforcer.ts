@@ -29,7 +29,7 @@ const OPENCLAW_DIR = join(HOME, ".openclaw");
 const AUTONOMY_DB_PATH = join(OPENCLAW_DIR, "autonomy.sqlite");
 const OBSERVABILITY_DB_PATH = join(OPENCLAW_DIR, "observability.sqlite");
 
-const PROMOTION_THRESHOLD = 5;
+const PROMOTION_THRESHOLD = 3;
 
 // ── Types ──
 

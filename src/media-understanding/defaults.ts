@@ -1,3 +1,4 @@
+import { loadLlmConfig, resolveSubsystem } from "../agents/llm-config-reader.js";
 import type { MediaUnderstandingCapability } from "./types.js";
 
 const MB = 1024 * 1024;
@@ -27,12 +28,43 @@ export const DEFAULT_PROMPT: Record<MediaUnderstandingCapability, string> = {
   video: "Describe the video.",
 };
 export const DEFAULT_VIDEO_MAX_BASE64_BYTES = 70 * MB;
-export const DEFAULT_AUDIO_MODELS: Record<string, string> = {
+const HARDCODED_AUDIO_MODELS: Record<string, string> = {
   groq: "whisper-large-v3-turbo",
   openai: "gpt-4o-mini-transcribe",
   deepgram: "nova-3",
   mistral: "voxtral-mini-latest",
 };
+
+const HARDCODED_IMAGE_MODELS: Record<string, string> = {
+  openai: "gpt-5-mini",
+  anthropic: "claude-opus-4-6",
+  google: "gemini-3-flash-preview",
+  minimax: "MiniMax-VL-01",
+  zai: "glm-4.6v",
+};
+
+function buildMediaModels(
+  hardcoded: Record<string, string>,
+  subsystemTask: string,
+): Record<string, string> {
+  const config = loadLlmConfig();
+  if (!config) {
+    return hardcoded;
+  }
+  const result = { ...hardcoded };
+  for (const provider of Object.keys(result)) {
+    const resolved = resolveSubsystem(config, "media", `${subsystemTask}-${provider}`);
+    if (resolved) {
+      result[provider] = resolved.apiModelId;
+    }
+  }
+  return result;
+}
+
+export const DEFAULT_AUDIO_MODELS: Record<string, string> = buildMediaModels(
+  HARDCODED_AUDIO_MODELS,
+  "audio",
+);
 
 export const AUTO_AUDIO_KEY_PROVIDERS = [
   "openai",
@@ -49,12 +81,9 @@ export const AUTO_IMAGE_KEY_PROVIDERS = [
   "zai",
 ] as const;
 export const AUTO_VIDEO_KEY_PROVIDERS = ["google", "moonshot"] as const;
-export const DEFAULT_IMAGE_MODELS: Record<string, string> = {
-  openai: "gpt-5-mini",
-  anthropic: "claude-opus-4-6",
-  google: "gemini-3-flash-preview",
-  minimax: "MiniMax-VL-01",
-  zai: "glm-4.6v",
-};
+export const DEFAULT_IMAGE_MODELS: Record<string, string> = buildMediaModels(
+  HARDCODED_IMAGE_MODELS,
+  "image",
+);
 export const CLI_OUTPUT_MAX_BUFFER = 5 * MB;
 export const DEFAULT_MEDIA_CONCURRENCY = 2;

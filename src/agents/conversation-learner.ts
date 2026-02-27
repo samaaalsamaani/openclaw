@@ -10,6 +10,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { emitAgentEvent } from "../infra/agent-events.js";
 import { defaultRuntime } from "../runtime.js";
+import { loadLlmConfig, resolveSubsystem } from "./llm-config-reader.js";
 
 const KB_DB_PATH = join(
   process.env.HOME ?? "/tmp",
@@ -30,6 +31,22 @@ const AUTH_PROFILES_PATH = join(
 
 const MAX_INSERTS_PER_TURN = 3;
 const MIN_MESSAGE_LENGTH = 20;
+
+const HARDCODED_EXTRACTION_MODEL = "claude-sonnet-4-6";
+
+function getExtractionModel(): string {
+  const config = loadLlmConfig();
+  if (!config) {
+    return HARDCODED_EXTRACTION_MODEL;
+  }
+  const resolved = resolveSubsystem(config, "conversation-learner", "extraction");
+  if (resolved) {
+    return resolved.apiModelId;
+  }
+  return HARDCODED_EXTRACTION_MODEL;
+}
+
+const EXTRACTION_MODEL = getExtractionModel();
 
 function getAnthropicKey(): string | null {
   try {
@@ -71,7 +88,7 @@ Return a JSON array of objects with {title, content, tags} or an empty array [] 
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: EXTRACTION_MODEL,
         max_tokens: 512,
         messages: [{ role: "user", content: prompt }],
       }),

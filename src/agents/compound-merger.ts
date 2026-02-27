@@ -14,8 +14,25 @@ import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runCliAgent } from "./cli-runner.js";
 import type { SubTaskResult } from "./compound-orchestrator.js";
 import { resolveCliProvider } from "./compound-shared.js";
+import { loadLlmConfig, resolveRoutingMerger } from "./llm-config-reader.js";
 
 const log = createSubsystemLogger("routing/merger");
+
+const HARDCODED_MERGE_MODEL = { provider: "anthropic", model: "claude-sonnet-4-6" };
+
+function getMergeModel(): { provider: string; model: string } {
+  const config = loadLlmConfig();
+  if (!config) {
+    return HARDCODED_MERGE_MODEL;
+  }
+  const resolved = resolveRoutingMerger(config);
+  if (resolved) {
+    return { provider: resolved.provider, model: resolved.model };
+  }
+  return HARDCODED_MERGE_MODEL;
+}
+
+const MERGE_MODEL = getMergeModel();
 
 export async function mergeSubTaskResults(input: {
   originalPrompt: string;
@@ -100,8 +117,8 @@ async function llmMerge(
     workspaceDir: opts.workspaceDir,
     config: loadConfig(),
     prompt: mergePrompt,
-    provider: resolveCliProvider("anthropic"),
-    model: "claude-sonnet-4-6",
+    provider: resolveCliProvider(MERGE_MODEL.provider),
+    model: MERGE_MODEL.model,
     timeoutMs: opts.timeoutMs,
     runId: mergeRunId,
   });
