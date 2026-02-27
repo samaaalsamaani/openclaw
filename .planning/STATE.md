@@ -47,6 +47,10 @@ E2E Valid.: [##########] 100% (7/7 subsystems tested, 10 bugs fixed, 3 gaps clos
 | 15    | 2/2   | Complete |
 
 _v1: 29 plans, 46 requirements. v2: 17 plans, 21 requirements. Total: 46 plans, 67 requirements._
+| Phase 02 P02 | 140 | 3 tasks | 3 files |
+| Phase 04 P01 | 6 | 2 tasks | 3 files |
+| Phase 04 P02 | 105 | 2 tasks | 2 files |
+| Phase 05-okr-management-kpi-dashboard P01 | 240 | 2 tasks | 3 files |
 
 ## v1 Retrospective (Feb 22, 2026)
 
@@ -115,6 +119,10 @@ _v1: 29 plans, 46 requirements. v2: 17 plans, 21 requirements. Total: 46 plans, 
 - [Phase 15]: reflect.js generates weekly report, saves to brain + KB
 - [Phase 15]: optimize.js reads quality scores, adjusts classifier weights
 - [Phase 15]: Wired to heartbeat Tier 7 (weekly Sunday)
+- [Phase 04]: Energy threshold = 4.0 (not 5.0) for executive summary mode
+- [Phase 04]: Cross-domain SQL for Mirrors posts (engagement rate prioritized)
+- [Phase 04]: Use UNIQUE INDEX instead of ALTER TABLE for safe CRM migration
+- [Phase 04]: OpenAI Function Calling strict mode for reliable contact parsing
 
 ### Pending Todos
 
