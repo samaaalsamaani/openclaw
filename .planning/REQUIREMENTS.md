@@ -252,10 +252,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 - [x] **OBS-01**: Comprehensive health check endpoint covering all services, APIs, databases
 - [x] **OBS-02**: Service crash detection with automatic restart (launchd KeepAlive + logging)
-- [ ] **OBS-03**: Integration failure alerts (MCP timeouts, SDK errors logged to observability.sqlite)
+- [x] **OBS-03**: Integration failure alerts (MCP timeouts, SDK errors logged to observability.sqlite)
 - [x] **OBS-04**: Config corruption detection (validate before loading, alert on schema errors)
-- [ ] **OBS-05**: Credential expiry warnings (check all tokens, warn 7 days before expiry)
-- [ ] **OBS-06**: Daily health report (email/notification with status of all components)
+- [x] **OBS-05**: Credential expiry warnings (check all tokens, warn 7 days before expiry)
+- [x] **OBS-06**: Daily health report (email/notification with status of all components)
 - [ ] **OBS-07**: Dashboard showing system health at a glance (services, APIs, databases, recent errors)
 
 ### Recovery Procedures (REC)
@@ -302,10 +302,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-07     | Phase 18: Data Integrity & Config Safety | Complete |
 | OBS-01      | Phase 19: Monitoring & Alerting          | Complete |
 | OBS-02      | Phase 19: Monitoring & Alerting          | Complete |
-| OBS-03      | Phase 19: Monitoring & Alerting          | Pending  |
+| OBS-03      | Phase 19: Monitoring & Alerting          | Complete |
 | OBS-04      | Phase 19: Monitoring & Alerting          | Complete |
-| OBS-05      | Phase 19: Monitoring & Alerting          | Pending  |
-| OBS-06      | Phase 19: Monitoring & Alerting          | Pending  |
+| OBS-05      | Phase 19: Monitoring & Alerting          | Complete |
+| OBS-06      | Phase 19: Monitoring & Alerting          | Complete |
 | OBS-07      | Phase 19: Monitoring & Alerting          | Pending  |
 | REC-01      | Phase 20: Recovery & Runbooks            | Pending  |
 | REC-02      | Phase 20: Recovery & Runbooks            | Pending  |
