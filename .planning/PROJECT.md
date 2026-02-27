@@ -8,47 +8,77 @@ A unified Personal AI Operating System connecting three free, world-class AI bra
 
 **The mesh**: Three AI brains, one protocol (MCP), shared memory (KB), unified routing — so the right brain handles every task automatically, and knowledge compounds across all interactions.
 
+## Current Milestone: v3.0 System Reliability & Hardening
+
+**Goal:** Transform PAIOS from fragile prototype to production-grade system. Eliminate crashes, prevent regressions, catch all failures, enable safe changes.
+
+**Success criteria:**
+
+- Services run weeks without restart (no crashes/hangs)
+- Config/code changes don't cause cascading failures
+- All failures detected and alerted immediately
+- Documented recovery procedures for every component
+
+**Status:** Defining requirements (NOT adding features — pure stabilization)
+
 ## Requirements
 
-### Validated
+### Validated (v1.0 + v2.0 shipped)
 
-- ✓ OpenClaw Gateway running as always-on daemon (launchd, port 18789) — existing
-- ✓ Claude Code CLI installed with Opus/Sonnet/Haiku models (Max sub) — existing
-- ✓ Codex CLI installed with gpt-5.3-codex (ChatGPT Pro) — existing
-- ✓ 7 API keys validated (Anthropic, OpenAI, OpenRouter, Brave, ElevenLabs, Deepgram, Late.dev) — existing
-- ✓ 30 scripts across 21 projects (all syntax + runtime validated) — existing
-- ✓ 26 OpenClaw skills configured — existing
-- ✓ 3 MCP servers (knowledge-base, macos-system, session-analytics) — existing
-- ✓ 6 custom Claude Code subagents + 11 GSD agents — existing
-- ✓ 2 brand profiles with voice, pillars, personas, competitors — existing
-- ✓ Content library at ~/Documents/OpenClaw/ with PARA structure — existing
-- ✓ KB SQLite with PARA columns, FTS, Unicode-aware search — existing
-- ✓ Python venv at ~/.openclaw/.venv (3.14, 17+ packages) — existing
-- ✓ Claude Agent SDK v0.2.50 installed — existing
-- ✓ GSD v1.20.5 installed (11 agents, 32 commands) — existing
+**Infrastructure:**
 
-### Active
+- ✓ OpenClaw Gateway running as always-on daemon (launchd, port 18789) — v1.0
+- ✓ MCP mesh wiring — Claude Code ↔ Codex CLI mutual MCP registration — v1.0
+- ✓ Shared MCP servers — KB/macOS/Analytics accessible from both CLIs — v1.0
+- ✓ Codex experimental features enabled (multi_agent, memory_tool, sqlite) — v1.0
+- ✓ Agent SDK integration — Gateway uses SDK instead of subprocess — v1.0
+- ✓ SDK in-process MCP servers — Gateway exposes capabilities as MCP tools — v1.0
+- ✓ SQLite busy_timeout fixes, MCP server hardening (SIGTERM, try/catch) — v1.0
 
-- [ ] MCP mesh wiring — Claude Code ↔ Codex CLI mutual MCP registration
-- [ ] Shared MCP servers — KB/macOS/Analytics accessible from both CLIs
-- [ ] Codex experimental features enabled (multi_agent, memory_tool, sqlite)
-- [ ] AI Task Router — classify tasks and route to optimal brain via MCP
-- [ ] Agent SDK integration — Gateway uses SDK instead of subprocess for Claude calls
-- [ ] SDK in-process MCP servers — Gateway exposes channels/heartbeat/skills as MCP tools
-- [ ] 8 Claude Code native skills (/kb, /capture, /post, /calendar, /competitors, /health, /brand, /codex-review)
-- [ ] Claude Code hooks — PreToolUse routing, PostToolUse KB ingestion, SessionStart context injection, Stop quality gate
-- [ ] KB context injection — relevant articles injected per task via --append-system-prompt
-- [ ] Auto-ingest to KB — completed tasks → KB learnings via PostToolUse hook
-- [ ] Codex memory_tool + sqlite features for persistent context
-- [ ] Heartbeat activation — cron-driven autonomous tasks (never ran despite config)
-- [ ] Content auto-posting — calendar → poster.py every 4h
-- [ ] Competitor daily sweep + weekly digest
-- [ ] File watchers — screenshots/downloads → appropriate AI brain
-- [ ] Claude Code Agent Teams — parallel research/review swarms
-- [ ] Cross-system task chains — capture → analyze → post (fully automated)
-- [ ] Unified `ai` CLI command — routes to best system
-- [ ] Stream-json bidirectional control for programmatic orchestration
-- [ ] Late.dev token refresh (YouTube expired, TikTok/Twitter expiring)
+**Intelligence:**
+
+- ✓ AI Task Router — classify tasks and route to optimal brain — v1.0
+- ✓ 8 Claude Code native skills — /kb, /capture, /post, /calendar, /competitors, /health, /brand, /codex-review — v1.0
+- ✓ Claude Code hooks — PreToolUse routing, PostToolUse KB ingestion, SessionStart context injection — v1.0
+- ✓ KB context injection — relevant articles per task via --append-system-prompt — v1.0
+- ✓ Auto-ingest to KB — completed tasks → KB learnings — v1.0
+- ✓ Codex memory_tool + sqlite for persistent context — v1.0
+- ✓ Dual-brain code review (Codex quality + Claude architecture) — v1.0
+
+**Autonomy:**
+
+- ✓ Heartbeat activation via launchd cron — v1.0
+- ✓ KB seeded with 50+ articles via content capture pipeline — v1.0
+- ✓ Content auto-posting — calendar → poster.py every 4h — v1.0
+- ✓ Competitor daily sweep + weekly digest — v1.0
+- ✓ Cross-system task chains — capture → analyze → post (fully automated) — v1.0
+
+**Observability (v2.0):**
+
+- ✓ Structured event tracing with SQLite persistence — v2.0
+- ✓ Quality scoring for routing decisions — v2.0
+- ✓ LLM usage tracking and cost analytics — v2.0
+- ✓ Cross-brain handoff and enrichment tracking — v2.0
+
+**Autonomy (v2.0):**
+
+- ✓ Action classification (safe/ask/never) — v2.0
+- ✓ Approval queue with trust accumulation — v2.0
+- ✓ Progressive autonomy levels — v2.0
+- ✓ File watchers — screenshots/downloads → appropriate AI brain — v2.0
+
+**Control (v2.0):**
+
+- ✓ Unified `ai` CLI command — routes to best system — v2.0
+- ✓ Stream-json bidirectional control for programmatic orchestration — v2.0
+- ✓ Agent Teams experimental support with quality gates — v2.0
+- ✓ Weekly self-reflection analyzing routing patterns — v2.0
+
+### Active (v3.0 — Stabilization)
+
+TBD — Will be defined during requirements gathering
+
+### Out of Scope
 
 ### Out of Scope
 
@@ -84,13 +114,24 @@ A unified Personal AI Operating System connecting three free, world-class AI bra
 - PAIOS-MASTER.md created as single source of truth (900+ lines)
 - Cost optimized from ~$780/mo to ~$0-60/mo
 
-### Known Issues
+### System Crisis (Stabilization Required)
 
-- Heartbeat never executed (all timestamps = 0)
-- KB barely populated (7 articles, 3 people, 0 atoms)
+**Critical Issues (v3.0 focus):**
+
+- **Services crash/restart constantly** — Gateway hangs, MCP servers die, launchd services unstable
+- **Integration failures** — MCP calls fail, SDK timeouts, cross-brain communication breaks frequently
+- **Config corruption** — llm-config.json, auth-profiles.json, openclaw.json get overwritten/broken
+- **Credential management broken** — Keys expire, auth-profiles.json drift, token refresh fails
+- **SQLite locking issues** — Database locks, KB inconsistency, lost events
+- **Silent failures everywhere** — No alerts, no monitoring, discover failures manually
+- **Change fragility** — Config edits, code changes, dependency updates cause cascading failures
+- **Technical debt accumulated** — Rapid development left fragile components throughout system
+- **No recovery procedures** — When things break, unclear how to fix them
+
+**Previous Known Issues (v1/v2):**
+
 - Late.dev YouTube token expired, TikTok/Twitter expiring
 - Gateway dist/ not built from source (using installed binary)
-- 0 Claude Code native skills (26 OpenClaw skills exist but aren't accessible from Claude Code sessions)
 
 ## Constraints
 
@@ -115,6 +156,8 @@ A unified Personal AI Operating System connecting three free, world-class AI bra
 | Codex for code, Claude for creative | Each model's strength. Codex = code-optimized sandbox. Claude = best reasoning + writing.                     | — Pending |
 | KB SQLite as shared memory          | Already exists with PARA, FTS, embeddings. Accessible via MCP server.                                         | ✓ Good    |
 
+| Stabilization milestone (v3.0) | Freeze new features, fix everything before building more | All 15 v1/v2 phases shipped but system unstable. Do it right. | — Pending |
+
 ---
 
-_Last updated: 2026-02-22 after initialization_
+_Last updated: 2026-02-27 after milestone v3.0 started_
