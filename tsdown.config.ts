@@ -105,6 +105,7 @@ export default defineConfig([
     fixedExtension: false,
     platform: "node",
     plugins: [inlineRolldownRuntime()],
+    external: ["better-sqlite3"],
   },
   {
     entry: "src/entry.ts",
@@ -112,6 +113,7 @@ export default defineConfig([
     fixedExtension: false,
     platform: "node",
     plugins: [inlineRolldownRuntime()],
+    external: ["better-sqlite3"],
   },
   {
     // Ensure this module is bundled as an entry so legacy CLI shims can resolve its exports.
