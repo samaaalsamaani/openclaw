@@ -116,7 +116,7 @@ function adoptNewerMainOAuthCredential(params: {
       (!Number.isFinite(params.cred.expires) || mainCred.expires > params.cred.expires)
     ) {
       params.store.profiles[params.profileId] = { ...mainCred };
-      saveAuthProfileStore(params.store, params.agentDir);
+      saveAuthProfileStore(params.store, params.agentDir, { force: true });
       log.info("adopted newer OAuth credentials from main agent", {
         profileId: params.profileId,
         agentDir: params.agentDir,
@@ -187,7 +187,7 @@ async function refreshOAuthTokenWithLock(params: {
       ...result.newCredentials,
       type: "oauth",
     };
-    saveAuthProfileStore(store, params.agentDir);
+    saveAuthProfileStore(store, params.agentDir, { force: true });
 
     return result;
   });
@@ -342,7 +342,7 @@ export async function resolveApiKeyForProfile(
         if (mainCred?.type === "oauth" && Date.now() < mainCred.expires) {
           // Main agent has fresh credentials - copy them to this agent and use them
           refreshedStore.profiles[profileId] = { ...mainCred };
-          saveAuthProfileStore(refreshedStore, params.agentDir);
+          saveAuthProfileStore(refreshedStore, params.agentDir, { force: true });
           log.info("inherited fresh OAuth credentials from main agent", {
             profileId,
             agentDir: params.agentDir,

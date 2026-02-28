@@ -334,8 +334,45 @@ export function ensureAuthProfileStore(
   return merged;
 }
 
-export function saveAuthProfileStore(store: AuthProfileStore, agentDir?: string): void {
+// Debounce tracker: skip usage-only writes within the throttle window.
+// Keyed by resolved auth path so multi-agent setups each get their own clock.
+const _lastWriteMs = new Map<string, number>();
+const _lastProfilesHash = new Map<string, string>();
+const USAGE_WRITE_THROTTLE_MS = 5 * 60 * 1000; // 5 minutes
+
+export function saveAuthProfileStore(
+  store: AuthProfileStore,
+  agentDir?: string,
+  opts?: { force?: boolean },
+): void {
   const authPath = resolveAuthStorePath(agentDir);
+
+  const payload = {
+    version: AUTH_STORE_VERSION,
+    profiles: store.profiles,
+    order: store.order ?? undefined,
+    lastGood: store.lastGood ?? undefined,
+    usageStats: store.usageStats ?? undefined,
+  } satisfies AuthProfileStore;
+
+  // Detect whether credentials (profiles, order, lastGood) actually changed.
+  // If only usageStats.lastUsed changed, throttle writes to avoid overwriting
+  // manual edits on every LLM call. Always write immediately when credentials change.
+  const profilesHash = JSON.stringify({
+    profiles: store.profiles,
+    order: store.order,
+    lastGood: store.lastGood,
+  });
+  const credentialsChanged = _lastProfilesHash.get(authPath) !== profilesHash;
+  const now = Date.now();
+  const lastWrite = _lastWriteMs.get(authPath) ?? 0;
+  const throttleExpired = now - lastWrite > USAGE_WRITE_THROTTLE_MS;
+
+  if (!opts?.force && !credentialsChanged && !throttleExpired) {
+    // Only usage stats changed within the throttle window — skip the write.
+    // This prevents auth-profiles.json from being overwritten on every LLM call.
+    return;
+  }
 
   // Create backup before overwriting (best-effort, non-blocking)
   if (fs.existsSync(authPath)) {
@@ -347,12 +384,7 @@ export function saveAuthProfileStore(store: AuthProfileStore, agentDir?: string)
     });
   }
 
-  const payload = {
-    version: AUTH_STORE_VERSION,
-    profiles: store.profiles,
-    order: store.order ?? undefined,
-    lastGood: store.lastGood ?? undefined,
-    usageStats: store.usageStats ?? undefined,
-  } satisfies AuthProfileStore;
   saveJsonFile(authPath, payload);
+  _lastWriteMs.set(authPath, now);
+  _lastProfilesHash.set(authPath, profilesHash);
 }
