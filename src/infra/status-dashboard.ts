@@ -467,13 +467,14 @@ export async function renderDashboard(): Promise<string> {
   } catch (err) {
     // Error handling: always return formatted output, never throw
     const errorMsg = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error && err.stack ? `\n\n${err.stack}` : "";
     return [
       hLine(BOX.heavyTL, BOX.heavyH, BOX.heavyTR, true),
       textLine(bold("PAIOS System Status"), "center", BOX.heavyV),
       textLine(red("Status check failed"), "center", BOX.heavyV),
       hLine(BOX.heavyBL, BOX.heavyH, BOX.heavyBR, true),
       "",
-      `Error: ${errorMsg}`,
+      `Error: ${errorMsg}${stack}`,
       "",
     ].join("\n");
   }
