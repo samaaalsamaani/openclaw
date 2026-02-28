@@ -241,7 +241,7 @@ describe("@prefix routing", () => {
     expect(result.provider).toBe("anthropic");
   });
 
-  it("@fast routes to system/Haiku with fast flag", () => {
+  it("@fast routes to system/Gemini Flash with fast flag", () => {
     const result = classifyTask({ message: "@fast what is 2+2" });
     expect(result.domain).toBe("system");
     expect(result.fast).toBe(true);

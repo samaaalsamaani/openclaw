@@ -8,7 +8,7 @@
  *   analysis → Claude Sonnet — research, summarization, data analysis
  *   vision   → Claude Sonnet — image analysis, screenshots, diagrams
  *   search   → Claude Sonnet — web search, current events, live data
- *   system   → Claude Sonnet — system commands, quick lookups, classification
+ *   system   → Gemini Flash (instant) — system commands, quick lookups, classification
  *   schedule → Claude Sonnet — calendar, reminders, planning
  */
 
@@ -19,6 +19,7 @@ import {
   getConfidenceThreshold,
   getDomainScoring,
   loadLlmConfig,
+  resolveModelRef,
   resolveRoutingDomain,
 } from "./llm-config-reader.js";
 
@@ -595,8 +596,7 @@ function buildDefaultRoute(): { provider: string; model: string } {
   if (!config?.routing?.default) {
     return HARDCODED_DEFAULT_ROUTE;
   }
-  // Resolve the routing default — try "analysis" domain first (that's the hardcoded default domain)
-  const resolved = resolveRoutingDomain(config, "analysis");
+  const resolved = resolveModelRef(config, config.routing.default);
   if (resolved) {
     return { provider: resolved.provider, model: resolved.model };
   }
@@ -675,7 +675,7 @@ applyRoutingWeights();
 // Users can prefix messages with @domain to force routing:
 //   @code, @creative, @analysis, @search, @vision, @system, @schedule
 //   @compound — force multi-brain orchestration
-//   @fast     — use faster/cheaper models (Haiku/Flash)
+//   @fast     — use Gemini Flash via instant tier
 
 const PREFIX_TO_DOMAIN: Record<string, TaskDomain> = {
   code: "code",
@@ -739,13 +739,13 @@ export function classifyTask(input: ClassifyTaskInput): ClassificationResult {
     };
   }
   if (prefix === "fast") {
-    const route = ROUTING_TABLE.system; // Haiku = fastest
+    const route = ROUTING_TABLE.system; // instant tier = Gemini Flash
     return {
       domain: "system",
       provider: route.provider,
       model: route.model,
       confidence: 100,
-      reason: "@fast → Haiku (fastest model)",
+      reason: "@fast → Gemini Flash (instant tier)",
       overrideSource: "prefix",
       strippedMessage: cleaned,
       fast: true,

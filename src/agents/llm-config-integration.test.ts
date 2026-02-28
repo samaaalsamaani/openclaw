@@ -29,6 +29,7 @@ import {
   _resetCache,
   type LLMConfig,
 } from "./llm-config-reader.js";
+import type { TaskDomain } from "./task-classifier.js";
 
 // ── Full production-like config fixture ──────────────────────────────
 
@@ -62,6 +63,15 @@ function makeProductionConfig(): LLMConfig {
         maxTokens: 64_000,
         capabilities: ["text", "image"],
         cost: { input: 0.8, output: 4.0 },
+      },
+      "google/gemini-2.5-flash": {
+        provider: "google",
+        apiModelId: "gemini-2.5-flash",
+        displayName: "Gemini 2.5 Flash (Direct)",
+        contextWindow: 1_048_576,
+        maxTokens: 8_192,
+        capabilities: ["text", "image"],
+        cost: { input: 0.15, output: 0.6 },
       },
       "openai-codex/gpt-5.3-codex": {
         provider: "openai-codex",
@@ -110,42 +120,45 @@ function makeProductionConfig(): LLMConfig {
       },
     },
     tiers: {
+      instant: {
+        description: "Ultra-low-latency. Gemini Flash at $0.15/M.",
+        primary: "google/gemini-2.5-flash",
+        fallbacks: ["anthropic/claude-haiku-4-5", "openrouter/google/gemini-2.5-flash"],
+        defaults: { maxTokens: 256, temperature: 0.1, thinking: false, retries: 1 },
+      },
       fast: {
-        description: "Low-latency, cost-effective.",
+        description: "Low-latency, cost-effective. Gemini Flash at $0.15/M.",
+        primary: "google/gemini-2.5-flash",
+        fallbacks: ["anthropic/claude-haiku-4-5", "openrouter/google/gemini-2.5-flash"],
+        providerPreference: ["google", "openrouter", "anthropic"],
+        defaults: { maxTokens: 768, temperature: 0.3, thinking: false, retries: 1 },
+      },
+      standard: {
+        description: "Balanced quality. Claude Sonnet at $3/M.",
         primary: "anthropic/claude-sonnet-4-6",
-        fallbacks: ["openai/gpt-4.1", "openrouter/google/gemini-2.5-flash"],
-        providerPreference: ["cli", "openai", "anthropic"],
-        defaults: { maxTokens: 512, temperature: 0.3, thinking: false, retries: 1 },
+        fallbacks: ["anthropic/claude-haiku-4-5", "openrouter/google/gemini-2.5-flash"],
+        defaults: { maxTokens: 2048, temperature: 0.5, thinking: false, retries: 2 },
       },
       deep: {
         description: "Complex reasoning.",
         primary: "anthropic/claude-sonnet-4-6",
-        fallbacks: ["openai/gpt-4.1"],
+        fallbacks: ["anthropic/claude-haiku-4-5", "openrouter/google/gemini-2.5-flash"],
         providerPreference: ["anthropic", "openai"],
-        defaults: { maxTokens: 2048, temperature: 0.7, thinking: true, retries: 2 },
+        defaults: { maxTokens: 4096, temperature: 0.7, thinking: true, retries: 2 },
       },
       premium: {
+        description: "Highest quality. Claude Opus at $15/M.",
         primary: "anthropic/claude-opus-4-6",
-        fallbacks: ["anthropic/claude-sonnet-4-6"],
-        defaults: { maxTokens: 4096, temperature: 0.8, thinking: true, retries: 2 },
-      },
-      code: {
-        primary: "openai-codex/gpt-5.3-codex",
-        fallbacks: ["anthropic/claude-sonnet-4-6", "openai/gpt-4.1"],
-        defaults: { maxTokens: 4096, temperature: 0.2, thinking: false, retries: 2 },
-      },
-      vision: {
-        primary: "anthropic/claude-sonnet-4-6",
-        fallbacks: ["openrouter/google/gemini-2.5-flash"],
-        defaults: { maxTokens: 2048, temperature: 0.3, thinking: false, retries: 1 },
+        fallbacks: ["anthropic/claude-sonnet-4-6", "anthropic/claude-haiku-4-5"],
+        defaults: { maxTokens: 8192, temperature: 0.8, thinking: true, retries: 2 },
       },
     },
     routing: {
       domains: {
         code: {
-          primary: { tier: "code" },
+          primary: { model: "openai-codex/gpt-5.3-codex" },
           verifier: { tier: "deep" },
-          enrichment: { tier: "code" },
+          enrichment: { tier: "standard" },
           fallbacks: ["anthropic/claude-sonnet-4-6", "openai/gpt-4.1"],
           scoring: { baseConfidence: 80, keywordBoost: 3, patternBoost: 5 },
           guidance: {
@@ -165,38 +178,39 @@ function makeProductionConfig(): LLMConfig {
           verifier: { tier: "deep" },
           enrichment: { tier: "deep" },
           fallbacks: ["openai/gpt-4.1", "anthropic/claude-haiku-4-5"],
-          scoring: { baseConfidence: 75, keywordBoost: 3, patternBoost: 5 },
+          scoring: { baseConfidence: 70, keywordBoost: 3, patternBoost: 5 },
         },
         search: {
           primary: { tier: "fast" },
           verifier: { tier: "fast" },
           enrichment: { tier: "fast" },
           fallbacks: ["openrouter/google/gemini-2.5-flash"],
-          scoring: { baseConfidence: 70, keywordBoost: 3, patternBoost: 5 },
+          scoring: { baseConfidence: 75, keywordBoost: 3, patternBoost: 5 },
         },
         vision: {
-          primary: { tier: "vision" },
-          verifier: { tier: "deep" },
-          enrichment: { tier: "vision" },
+          primary: { tier: "standard" },
+          verifier: { tier: "standard" },
+          enrichment: { tier: "standard" },
           fallbacks: ["openrouter/google/gemini-2.5-flash"],
-          scoring: { baseConfidence: 90, keywordBoost: 3, patternBoost: 5 },
+          scoring: { baseConfidence: 95, keywordBoost: 0, patternBoost: 0 },
         },
         system: {
-          primary: { tier: "fast" },
-          verifier: { tier: "fast" },
-          enrichment: { tier: "fast" },
+          primary: { tier: "instant" },
           fallbacks: ["anthropic/claude-haiku-4-5"],
-          scoring: { baseConfidence: 85, keywordBoost: 3, patternBoost: 5 },
+          scoring: { baseConfidence: 65, keywordBoost: 3, patternBoost: 5 },
+          guidance: {
+            enrichment: "Focus on precise commands.",
+            verification: "Check for dangerous commands.",
+          },
         },
         schedule: {
           primary: { tier: "fast" },
-          verifier: { tier: "fast" },
           enrichment: { tier: "fast" },
           fallbacks: ["openai/gpt-4.1"],
-          scoring: { baseConfidence: 80, keywordBoost: 3, patternBoost: 5 },
+          scoring: { baseConfidence: 70, keywordBoost: 3, patternBoost: 5 },
         },
       },
-      default: { tier: "fast" },
+      default: { tier: "standard" },
       confidenceThreshold: 70,
       weights: { keywordMultiplier: 3, patternMultiplier: 5 },
       merger: { tier: "deep" },
@@ -212,10 +226,10 @@ function makeProductionConfig(): LLMConfig {
       ceo: {
         briefing: { tier: "deep" },
         review: { tier: "deep" },
-        quarterly: { tier: "deep" },
+        quarterly: { tier: "premium" },
         crossCheck: { tier: "fast" },
         reflection: { tier: "fast" },
-        crm: { tier: "fast" },
+        crm: { tier: "instant" },
         default: { tier: "deep" },
       },
       calendar: {
@@ -228,7 +242,7 @@ function makeProductionConfig(): LLMConfig {
         tts: { model: "openai/gpt-4o-mini-tts" },
       },
       media: {
-        vision: { tier: "vision" },
+        vision: { tier: "standard" },
       },
       learner: {
         factExtraction: { tier: "fast" },
@@ -298,7 +312,7 @@ describe("LLM config integration tests", () => {
       const config = loadLlmConfig();
       expect(config).not.toBeNull();
       expect(config!.version).toBe(1);
-      expect(Object.keys(config!.models)).toHaveLength(8);
+      expect(Object.keys(config!.models)).toHaveLength(9);
       expect(Object.keys(config!.tiers)).toHaveLength(5);
       expect(Object.keys(config!.routing!.domains!)).toHaveLength(7);
       expect(Object.keys(config!.subsystems!)).toHaveLength(6);
@@ -382,10 +396,10 @@ describe("LLM config integration tests", () => {
       code: { provider: "openai-codex", model: "gpt-5.3-codex" },
       creative: { provider: "anthropic", model: "claude-opus-4-6" },
       analysis: { provider: "anthropic", model: "claude-sonnet-4-6" },
-      search: { provider: "anthropic", model: "claude-sonnet-4-6" },
+      search: { provider: "google", model: "gemini-2.5-flash" },
       vision: { provider: "anthropic", model: "claude-sonnet-4-6" },
-      system: { provider: "anthropic", model: "claude-sonnet-4-6" },
-      schedule: { provider: "anthropic", model: "claude-sonnet-4-6" },
+      system: { provider: "google", model: "gemini-2.5-flash" },
+      schedule: { provider: "google", model: "gemini-2.5-flash" },
     };
 
     for (const [domain, expected] of Object.entries(DOMAIN_EXPECTATIONS)) {
@@ -399,34 +413,45 @@ describe("LLM config integration tests", () => {
       });
     }
 
-    it("verifier models resolve for all configured domains", () => {
+    it("verifier models resolve for domains that have verifiers configured", () => {
       writeConfig(makeProductionConfig());
       const config = loadLlmConfig()!;
-      for (const domain of Object.keys(DOMAIN_EXPECTATIONS)) {
+      // system and schedule have no verifier in the unified tier config
+      const domainsWithVerifier = ["code", "creative", "analysis", "search", "vision"];
+      for (const domain of domainsWithVerifier) {
         const result = resolveRoutingVerifier(config, domain as unknown as TaskDomain);
         expect(result).not.toBeNull();
-        // All verifiers in production config use deep or fast tier -> sonnet
+      }
+      // Verifiers use deep or standard tier -> sonnet
+      const sonnetVerifiers = ["code", "creative", "analysis"];
+      for (const domain of sonnetVerifiers) {
+        const result = resolveRoutingVerifier(config, domain as unknown as TaskDomain);
         expect(result!.model).toBe("claude-sonnet-4-6");
       }
+      // system and schedule: no verifier configured
+      expect(resolveRoutingVerifier(config, "system")).toBeNull();
+      expect(resolveRoutingVerifier(config, "schedule")).toBeNull();
     });
 
-    it("enrichment models resolve for all configured domains", () => {
+    it("enrichment models resolve for domains that have enrichment configured", () => {
       writeConfig(makeProductionConfig());
       const config = loadLlmConfig()!;
+      // system has no enrichment in the unified tier config
       const enrichmentExpected: Record<string, string> = {
-        code: "gpt-5.3-codex",
-        creative: "claude-opus-4-6",
-        analysis: "claude-sonnet-4-6",
-        search: "claude-sonnet-4-6",
-        vision: "claude-sonnet-4-6",
-        system: "claude-sonnet-4-6",
-        schedule: "claude-sonnet-4-6",
+        code: "claude-sonnet-4-6", // standard tier
+        creative: "claude-opus-4-6", // premium tier
+        analysis: "claude-sonnet-4-6", // deep tier
+        search: "gemini-2.5-flash", // fast tier (Gemini)
+        vision: "claude-sonnet-4-6", // standard tier
+        schedule: "gemini-2.5-flash", // fast tier (Gemini)
       };
       for (const [domain, expectedModel] of Object.entries(enrichmentExpected)) {
         const result = resolveRoutingEnrichment(config, domain as unknown as TaskDomain);
         expect(result).not.toBeNull();
         expect(result!.model).toBe(expectedModel);
       }
+      // system has no enrichment configured
+      expect(resolveRoutingEnrichment(config, "system")).toBeNull();
     });
 
     it("merger model resolves to deep tier (sonnet)", () => {
@@ -443,7 +468,7 @@ describe("LLM config integration tests", () => {
       const config = loadLlmConfig()!;
       // Cast to any to test unmapped domain
       const result = resolveRoutingDomain(config, "unknown-domain" as unknown as TaskDomain);
-      // Should fall back to routing.default = fast tier = sonnet
+      // Should fall back to routing.default = standard tier = sonnet
       expect(result).not.toBeNull();
       expect(result!.model).toBe("claude-sonnet-4-6");
     });
@@ -502,7 +527,7 @@ describe("LLM config integration tests", () => {
       expect(result).not.toBeNull();
       expect(result!.model).toBe("claude-sonnet-4-6");
       expect(result!.config?.thinking).toBe(true);
-      expect(result!.config?.maxTokens).toBe(2048);
+      expect(result!.config?.maxTokens).toBe(4096);
     });
 
     it("resolves KB decisions to deep tier", () => {
@@ -518,7 +543,7 @@ describe("LLM config integration tests", () => {
       const config = loadLlmConfig()!;
       const result = resolveSubsystem(config, "kb", "search");
       expect(result).not.toBeNull();
-      expect(result!.config?.maxTokens).toBe(512);
+      expect(result!.config?.maxTokens).toBe(768);
       expect(result!.config?.thinking).toBe(false);
     });
 
@@ -527,7 +552,7 @@ describe("LLM config integration tests", () => {
       const config = loadLlmConfig()!;
       const result = resolveSubsystem(config, "kb", "unknown-task");
       expect(result).not.toBeNull();
-      expect(result!.config?.maxTokens).toBe(512); // fast tier
+      expect(result!.config?.maxTokens).toBe(768); // fast tier
     });
 
     it("returns KB fallback chain", () => {
@@ -548,13 +573,13 @@ describe("LLM config integration tests", () => {
   // ── 6. CEO subsystem ─────────────────────────────────────────────
 
   describe("CEO subsystem integration", () => {
-    it("resolves CEO briefing to deep tier (thinking=true, maxTokens=2048)", () => {
+    it("resolves CEO briefing to deep tier (thinking=true, maxTokens=4096)", () => {
       writeConfig(makeProductionConfig());
       const config = loadLlmConfig()!;
       const result = resolveSubsystem(config, "ceo", "briefing");
       expect(result).not.toBeNull();
       expect(result!.config?.thinking).toBe(true);
-      expect(result!.config?.maxTokens).toBe(2048);
+      expect(result!.config?.maxTokens).toBe(4096);
     });
 
     it("resolves CEO review to deep tier", () => {
@@ -565,30 +590,31 @@ describe("LLM config integration tests", () => {
       expect(result!.config?.thinking).toBe(true);
     });
 
-    it("resolves CEO crossCheck to fast tier (thinking=false, maxTokens=512)", () => {
+    it("resolves CEO crossCheck to fast tier (thinking=false, maxTokens=768)", () => {
       writeConfig(makeProductionConfig());
       const config = loadLlmConfig()!;
       const result = resolveSubsystem(config, "ceo", "crossCheck");
       expect(result).not.toBeNull();
       expect(result!.config?.thinking).toBe(false);
-      expect(result!.config?.maxTokens).toBe(512);
+      expect(result!.config?.maxTokens).toBe(768);
     });
 
-    it("resolves CEO crm to fast tier", () => {
+    it("resolves CEO crm to instant tier (thinking=false)", () => {
       writeConfig(makeProductionConfig());
       const config = loadLlmConfig()!;
       const result = resolveSubsystem(config, "ceo", "crm");
       expect(result).not.toBeNull();
       expect(result!.config?.thinking).toBe(false);
+      expect(result!.config?.maxTokens).toBe(256);
     });
 
-    it("CEO default falls back to deep tier", () => {
+    it("CEO default falls back to deep tier (thinking=true, maxTokens=4096)", () => {
       writeConfig(makeProductionConfig());
       const config = loadLlmConfig()!;
       const result = resolveSubsystem(config, "ceo");
       expect(result).not.toBeNull();
       expect(result!.config?.thinking).toBe(true);
-      expect(result!.config?.maxTokens).toBe(2048);
+      expect(result!.config?.maxTokens).toBe(4096);
     });
   });
 
@@ -612,7 +638,7 @@ describe("LLM config integration tests", () => {
       expect(result!.apiModelId).toBe("gpt-4o-mini-tts");
     });
 
-    it("resolves media vision to vision tier", () => {
+    it("resolves media vision to standard tier (sonnet, no thinking)", () => {
       writeConfig(makeProductionConfig());
       const config = loadLlmConfig()!;
       const result = resolveSubsystem(config, "media", "vision");
@@ -621,38 +647,65 @@ describe("LLM config integration tests", () => {
       expect(result!.config?.thinking).toBe(false);
     });
 
-    it("resolves learner factExtraction to fast tier", () => {
+    it("resolves learner factExtraction to fast tier (maxTokens=768)", () => {
       writeConfig(makeProductionConfig());
       const config = loadLlmConfig()!;
       const result = resolveSubsystem(config, "learner", "factExtraction");
       expect(result).not.toBeNull();
-      expect(result!.config?.maxTokens).toBe(512);
+      expect(result!.config?.maxTokens).toBe(768);
     });
   });
 
   // ── 8. Tier resolution with defaults ──────────────────────────────
 
   describe("tier system", () => {
-    it("fast tier: maxTokens=512, thinking=false, temperature=0.3", () => {
+    it("instant tier: maxTokens=256, thinking=false, temperature=0.1", () => {
+      writeConfig(makeProductionConfig());
+      const config = loadLlmConfig()!;
+      const result = resolveTier(config, "instant");
+      expect(result).not.toBeNull();
+      expect(result!.config).toEqual({
+        maxTokens: 256,
+        temperature: 0.1,
+        thinking: false,
+        retries: 1,
+      });
+    });
+
+    it("fast tier: maxTokens=768, thinking=false, temperature=0.3", () => {
       writeConfig(makeProductionConfig());
       const config = loadLlmConfig()!;
       const result = resolveTier(config, "fast");
       expect(result).not.toBeNull();
       expect(result!.config).toEqual({
-        maxTokens: 512,
+        maxTokens: 768,
         temperature: 0.3,
         thinking: false,
         retries: 1,
       });
     });
 
-    it("deep tier: maxTokens=2048, thinking=true, temperature=0.7", () => {
+    it("standard tier: maxTokens=2048, thinking=false, temperature=0.5", () => {
+      writeConfig(makeProductionConfig());
+      const config = loadLlmConfig()!;
+      const result = resolveTier(config, "standard");
+      expect(result).not.toBeNull();
+      expect(result!.config).toEqual({
+        maxTokens: 2048,
+        temperature: 0.5,
+        thinking: false,
+        retries: 2,
+      });
+      expect(result!.model).toBe("claude-sonnet-4-6");
+    });
+
+    it("deep tier: maxTokens=4096, thinking=true, temperature=0.7", () => {
       writeConfig(makeProductionConfig());
       const config = loadLlmConfig()!;
       const result = resolveTier(config, "deep");
       expect(result).not.toBeNull();
       expect(result!.config).toEqual({
-        maxTokens: 2048,
+        maxTokens: 4096,
         temperature: 0.7,
         thinking: true,
         retries: 2,
@@ -668,13 +721,16 @@ describe("LLM config integration tests", () => {
       expect(result!.model).toBe("claude-opus-4-6");
     });
 
-    it("code tier routes to codex", () => {
+    it("code domain routes to codex via direct model reference", () => {
       writeConfig(makeProductionConfig());
       const config = loadLlmConfig()!;
-      const result = resolveTier(config, "code");
+      // code domain uses { model: "openai-codex/gpt-5.3-codex" } not a tier
+      const result = resolveRoutingDomain(config, "code");
       expect(result).not.toBeNull();
       expect(result!.provider).toBe("openai-codex");
       expect(result!.model).toBe("gpt-5.3-codex");
+      // code tier no longer exists in the unified 5-tier system
+      expect(resolveTier(config, "code")).toBeNull();
     });
 
     it("each tier has correct fallback chain", () => {
@@ -682,13 +738,15 @@ describe("LLM config integration tests", () => {
       const config = loadLlmConfig()!;
       const fast = resolveTier(config, "fast")!;
       expect(fast.fallbacks).toHaveLength(2);
+      expect(fast.fallbacks![0].model).toBe("claude-haiku-4-5");
 
       const deep = resolveTier(config, "deep")!;
-      expect(deep.fallbacks).toHaveLength(1);
-      expect(deep.fallbacks![0].model).toBe("gpt-4.1");
+      expect(deep.fallbacks).toHaveLength(2);
+      expect(deep.fallbacks![0].model).toBe("claude-haiku-4-5");
 
-      const code = resolveTier(config, "code")!;
-      expect(code.fallbacks).toHaveLength(2);
+      const premium = resolveTier(config, "premium")!;
+      expect(premium.fallbacks).toHaveLength(2);
+      expect(premium.fallbacks![0].model).toBe("claude-sonnet-4-6");
     });
   });
 
@@ -702,10 +760,10 @@ describe("LLM config integration tests", () => {
       expect(codeScoring).toEqual({ baseConfidence: 80, keywordBoost: 3, patternBoost: 5 });
 
       const visionScoring = getDomainScoring(config, "vision");
-      expect(visionScoring!.baseConfidence).toBe(90);
+      expect(visionScoring!.baseConfidence).toBe(95);
 
       const searchScoring = getDomainScoring(config, "search");
-      expect(searchScoring!.baseConfidence).toBe(70);
+      expect(searchScoring!.baseConfidence).toBe(75);
     });
 
     it("returns confidence threshold from config", () => {
