@@ -124,6 +124,11 @@ export type ConfigWriteOptions = {
    * even if schema/default normalization reintroduces them.
    */
   unsetPaths?: string[][];
+  /**
+   * When true, validate and compute the diff but do NOT write to disk.
+   * Use the returned changedSummary to show a preview to the user.
+   */
+  dryRun?: boolean;
 };
 
 export type ReadConfigFileSnapshotForWriteResult = {
@@ -1174,6 +1179,26 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
         errorMessage,
       });
     };
+
+    // ── Dry-run: validate + preview only, no disk write ──────────────────────
+    if (options.dryRun) {
+      return;
+    }
+
+    // ── Auto-backup to ~/.openclaw/backups/ before any write ─────────────────
+    // Separate from the rotation backups — gives a stable pre-change snapshot
+    // that survives rotation and can be restored after any failed change.
+    if (deps.fs.existsSync(configPath)) {
+      try {
+        const backupsDir = path.join(path.dirname(configPath), "backups");
+        await deps.fs.promises.mkdir(backupsDir, { recursive: true, mode: 0o700 });
+        const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+        const backupName = `${path.basename(configPath)}.${ts}.bak`;
+        await deps.fs.promises.copyFile(configPath, path.join(backupsDir, backupName));
+      } catch {
+        // best-effort — never block a write because of backup failure
+      }
+    }
 
     const tmp = path.join(
       dir,

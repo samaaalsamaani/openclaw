@@ -334,6 +334,11 @@ export function registerConfigCli(program: Command) {
     .argument("<value>", "Value (JSON5 or raw string)")
     .option("--strict-json", "Strict JSON5 parsing (error instead of raw string fallback)", false)
     .option("--json", "Legacy alias for --strict-json", false)
+    .option(
+      "--dry-run",
+      "Validate the change and show what would be written, without writing",
+      false,
+    )
     .action(async (path: string, value: string, opts) => {
       try {
         const parsedPath = parseRequiredPath(path);
@@ -346,8 +351,14 @@ export function registerConfigCli(program: Command) {
         // This prevents runtime defaults from leaking into the written config file (issue #6070)
         const next = structuredClone(snapshot.resolved) as Record<string, unknown>;
         setAtPath(next, parsedPath, parsedValue);
-        await writeConfigFile(next);
-        defaultRuntime.log(info(`Updated ${path}. Restart the gateway to apply.`));
+        const dryRun = Boolean(opts.dryRun);
+        await writeConfigFile(next, { dryRun });
+        if (dryRun) {
+          defaultRuntime.log(info(`Dry run: ${path} = ${JSON.stringify(parsedValue)}`));
+          defaultRuntime.log(theme.muted("No changes written. Remove --dry-run to apply."));
+        } else {
+          defaultRuntime.log(info(`Updated ${path}. Restart the gateway to apply.`));
+        }
       } catch (err) {
         defaultRuntime.error(danger(String(err)));
         defaultRuntime.exit(1);
@@ -360,5 +371,56 @@ export function registerConfigCli(program: Command) {
     .argument("<path>", "Config path (dot or bracket notation)")
     .action(async (path: string) => {
       await runConfigUnset({ path });
+    });
+
+  cmd
+    .command("validate")
+    .description("Validate the current config file and report issues")
+    .option("--json", "Output results as JSON", false)
+    .action(async (opts) => {
+      const snapshot = await readConfigFileSnapshot();
+      const asJson = Boolean(opts.json);
+
+      if (!snapshot.exists) {
+        if (asJson) {
+          defaultRuntime.log(JSON.stringify({ valid: false, error: "Config file not found" }));
+        } else {
+          defaultRuntime.error(danger("Config file not found. Run `openclaw setup` first."));
+        }
+        defaultRuntime.exit(1);
+        return;
+      }
+
+      const issues = snapshot.issues ?? [];
+      const warnings = snapshot.warnings ?? [];
+      const valid = snapshot.valid && issues.length === 0;
+
+      if (asJson) {
+        defaultRuntime.log(JSON.stringify({ valid, issues, warnings }, null, 2));
+      } else {
+        if (valid && warnings.length === 0) {
+          defaultRuntime.log(info("Config valid ✓"));
+        } else {
+          if (issues.length > 0) {
+            defaultRuntime.error(danger("Config issues:"));
+            for (const issue of issues) {
+              defaultRuntime.error(`  ${danger("✗")} ${issue.path}: ${issue.message}`);
+            }
+          }
+          if (warnings.length > 0) {
+            defaultRuntime.log(theme.muted("Warnings:"));
+            for (const w of warnings) {
+              defaultRuntime.log(`  ${theme.muted("!")} ${w.path}: ${w.message}`);
+            }
+          }
+          if (valid) {
+            defaultRuntime.log(info("Config valid (with warnings) ✓"));
+          }
+        }
+      }
+
+      if (!valid) {
+        defaultRuntime.exit(1);
+      }
     });
 }
