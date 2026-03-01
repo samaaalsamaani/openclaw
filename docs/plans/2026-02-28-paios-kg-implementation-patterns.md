@@ -289,7 +289,7 @@ MATCH (signal:Signal {signal_type: "market"})-
       [during:during]-(event:Event)-
       [enables:enables]-(decision:Decision)
 WHERE signal.detected_at > DATE_SUB(NOW(), INTERVAL 30 DAY)
-  AND event.timestamp BETWEEN signal.detected_at 
+  AND event.timestamp BETWEEN signal.detected_at
                       AND DATE_ADD(signal.detected_at, INTERVAL 1 DAY)
 RETURN signal, event, decision, signal.value as volatility
 ORDER BY signal.value DESC;
@@ -423,7 +423,7 @@ def deduplicate_entities(new_entity, existing_entities):
     exact_match = find_exact_match(new_entity, existing_entities)
     if exact_match:
         return exact_match.id
-    
+
     # 2. Semantic similarity (embedding-based)
     semantic_candidates = find_semantic_similar(
         new_entity.description_embedding,
@@ -432,11 +432,11 @@ def deduplicate_entities(new_entity, existing_entities):
     )
     if semantic_candidates:
         return semantic_candidates[0].id  # Highest confidence
-    
+
     # 3. Human review (low confidence, ambiguous)
     if semantic_candidates and confidence < 0.7:
         request_human_review(new_entity, semantic_candidates)
-    
+
     # 4. Create new entity
     return create_entity(new_entity)
 ```
@@ -458,7 +458,7 @@ def ingest_event(event_data):
         enrichment_status='pending'
     )
     db.create_node(event)
-    
+
     # 2. Extract entities mentioned in event
     entities = extract_entities(event_data['description'])
     for entity_ref in entities:
@@ -470,7 +470,7 @@ def ingest_event(event_data):
             existing_id,
             reference_type="mentions"
         )
-    
+
     # 3. Link to related events (temporal + semantic)
     recent_events = db.query(
         "MATCH (e:Event) WHERE e.timestamp > $cutoff",
@@ -484,14 +484,14 @@ def ingest_event(event_data):
                 event.id,
                 temporal_type=classify_temporal_distance(...)
             )
-    
+
     # 4. Schedule async enrichment
     queue_enrichment_task(
         event_id=event.id,
         task_type="extract_causal_links",
         priority="medium"
     )
-    
+
     # 5. Log lineage
     log_lineage(
         entity_id=event.id,
@@ -499,7 +499,7 @@ def ingest_event(event_data):
         ingestion_timestamp=NOW(),
         confidence=event.confidence
     )
-    
+
     return event.id
 ```
 
@@ -518,23 +518,23 @@ def batch_update_embeddings():
            OR e.embedding_timestamp < DATE_SUB(NOW(), INTERVAL 7 DAY)
         LIMIT 1000
     """)
-    
+
     # 2. Generate embeddings in batch
     embeddings = []
     for node in stale_nodes:
         text = f"{node.label} {node.description}"
         embedding = model.embed(text)  # Batch API call
         embeddings.append((node.id, embedding))
-    
+
     # 3. Update sqlite-vec
     vec_db.insert_batch(embeddings, table='event_embeddings')
-    
+
     # 4. Update timestamps
     db.query(f"""
         UPDATE Event SET embedding_timestamp = NOW()
         WHERE id IN {[e[0] for e in embeddings]}
     """)
-    
+
     return len(stale_nodes)
 ```
 
@@ -577,11 +577,11 @@ def age_based_confidence_decay():
         FROM causes_rel
         WHERE discovered_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
     """)
-    
+
     for edge in old_edges:
         weeks_old = (NOW() - edge.discovered_at).days // 7
         new_confidence = edge.confidence * (1 - edge.confidence_decay_rate) ** weeks_old
-        
+
         if new_confidence < 0.1:  # Mark as invalid
             db.update_rel(edge.id, end_time=NOW())
         else:
@@ -610,9 +610,9 @@ def execute_query(query_type, query):
         'retrieval_strategies': [],  # ['vector', 'graph', 'fts']
         'fusion_method': None,  # 'rrf', 'union', 'sequential'
     }
-    
+
     start = time.time()
-    
+
     # Route based on cost optimizer
     if is_relationship_heavy_query(query):
         result = graph_search(query)
@@ -627,14 +627,14 @@ def execute_query(query_type, query):
         result = rrf_fusion(vector_results, graph_results)
         metrics['retrieval_strategies'] = ['vector', 'graph']
         metrics['fusion_method'] = 'rrf'
-    
+
     metrics['execution_time_ms'] = (time.time() - start) * 1000
     metrics['results_count'] = len(result)
     metrics['cost_usd'] = estimate_cost(metrics)
-    
+
     # Log for analysis
     log_query_metric(metrics)
-    
+
     return result, metrics
 ```
 
@@ -688,7 +688,7 @@ def migrate_schema_v1_to_v2():
     # Step 1: Add new fields to existing tables (additive)
     for new_field in SchemaVersion.new_in_v2:
         db.add_column(table, new_field, default_value)
-    
+
     # Step 2: Backfill data (async, in background)
     async def backfill():
         events = db.query("SELECT * FROM Event")
@@ -697,10 +697,10 @@ def migrate_schema_v1_to_v2():
             event.valid_from = event.timestamp
             event.valid_until = None
             db.update(event)
-    
+
     # Step 3: Update schema version
     db.set_version("2.0")
-    
+
     # Step 4: Keep both code paths working (v1 + v2) until cutover
     # Old code: can still query v1 fields
     # New code: uses v2 fields
@@ -719,7 +719,7 @@ def lazy_graph_rag(query_text):
     """
     # Step 1: Semantic search finds relevant nodes
     relevant_nodes = vector_search(query_text, limit=20)
-    
+
     # Step 2: Extract subgraph around those nodes
     subgraph = extract_subgraph(
         node_ids=[n.id for n in relevant_nodes],
@@ -727,17 +727,17 @@ def lazy_graph_rag(query_text):
         edge_types=['causes', 'enables', 'related_to']
     )
     # Cost: O(neighbors of relevant_nodes), not O(entire graph)
-    
+
     # Step 3: LLM reasons over subgraph
     context = format_subgraph_for_llm(subgraph)
     answer = llm.generate(query_text, context=context)
-    
+
     # Cost breakdown:
     #   - Vector search: ~$0.001
     #   - Subgraph extraction: O(query), ~$0
     #   - LLM generation: ~$0.005
     #   Total: ~$0.006 per query (vs $0.50 for pre-indexing)
-    
+
     return answer
 ```
 
@@ -746,11 +746,13 @@ def lazy_graph_rag(query_text):
 ## Part 8: Recommended Implementation Order (Phases 1-4)
 
 ### Phase 0: Current (Already Done)
+
 - [x] Kuzu with 8 node types, 16 edge types
 - [x] sqlite-vec for embeddings
 - [x] Basic queries (node lookup, simple traversal)
 
 ### Phase 1: Temporal + Causal (Week 1-2, Q1 2026)
+
 - [ ] Add temporal validity fields to all nodes
 - [ ] Add confidence + decay to causal edges
 - [ ] Implement root cause analysis queries (Query Type 1)
@@ -758,6 +760,7 @@ def lazy_graph_rag(query_text):
 - **Metric:** Support "find root causes within X days" queries
 
 ### Phase 2: Schema Evolution (Week 3-4, Q1 2026)
+
 - [ ] Implement schema versioning system
 - [ ] Add migration tracking
 - [ ] Test backward compatibility
@@ -765,6 +768,7 @@ def lazy_graph_rag(query_text):
 - **Metric:** Can add new relationship type without query breakage
 
 ### Phase 3: Incremental Ingestion (Week 1-2, Q2 2026)
+
 - [ ] Build entity deduplication module
 - [ ] Implement source + lineage tracking
 - [ ] Add batch embedding updates
@@ -772,6 +776,7 @@ def lazy_graph_rag(query_text):
 - **Metric:** New data integrated in <1s, no full rebuild required
 
 ### Phase 4: Hybrid Retrieval (Week 3-4, Q2 2026)
+
 - [ ] Implement RRF fusion
 - [ ] Build cost optimizer (choose retrieval strategy)
 - [ ] Add query performance metrics tracking
@@ -782,16 +787,16 @@ def lazy_graph_rag(query_text):
 
 ## Performance Targets (By End of Phase 4)
 
-| Metric | Target | Current | Status |
-|--------|--------|---------|--------|
-| Graph size | 100K nodes | 13K nodes | On track (10x growth) |
-| Query latency (simple) | <100ms | <10ms | ✓ Excellent |
-| Query latency (multi-hop) | <500ms | N/A | To implement |
-| Indexing cost | $0 (query-time) | N/A | New approach |
-| Schema versions | Unlimited (backward compat) | v1 | To implement |
-| Entity dedup accuracy | >98% | ~80% (manual) | To improve |
-| Temporal queries | 100% of queries | ~10% | To expand |
-| Causal chain depth | 5+ hops | 1-2 hops | To expand |
+| Metric                    | Target                      | Current       | Status                |
+| ------------------------- | --------------------------- | ------------- | --------------------- |
+| Graph size                | 100K nodes                  | 13K nodes     | On track (10x growth) |
+| Query latency (simple)    | <100ms                      | <10ms         | ✓ Excellent           |
+| Query latency (multi-hop) | <500ms                      | N/A           | To implement          |
+| Indexing cost             | $0 (query-time)             | N/A           | New approach          |
+| Schema versions           | Unlimited (backward compat) | v1            | To implement          |
+| Entity dedup accuracy     | >98%                        | ~80% (manual) | To improve            |
+| Temporal queries          | 100% of queries             | ~10%          | To expand             |
+| Causal chain depth        | 5+ hops                     | 1-2 hops      | To expand             |
 
 ---
 
@@ -834,21 +839,25 @@ ORDER BY pattern_count DESC;
 ## Gotchas & Lessons Learned
 
 ### Data Quality
+
 - **Trap:** Ingest events with manual descriptions → inconsistent semantics
 - **Fix:** Normalize descriptions through LLM extraction before ingestion
 - **Cost:** One-time + incremental as new data comes in
 
 ### Schema Evolution
+
 - **Trap:** Add required field without default → old queries break
 - **Fix:** All new fields must have defaults; mark as optional/extensible
 - **Timeline:** Additive schema changes every sprint are fine; destructive changes require migration planning
 
 ### Temporal Reasoning
+
 - **Trap:** Store timestamp but not "is this still true?"
 - **Fix:** Use [valid_from, valid_until] intervals on all time-dependent facts
 - **Decay:** Causal confidence decays with age (events drift apart)
 
 ### Entity Deduplication
+
 - **Trap:** Manual dedup does not scale past 1K entities
 - **Fix:** Automate with semantic similarity + human review for ambiguous cases
 - **Accuracy:** Expect 90%+ with fallback to human review
@@ -860,6 +869,7 @@ ORDER BY pattern_count DESC;
 This implementation guide provides concrete patterns to evolve PAIOS from v1.0 (baseline) to v3.0 (production temporal knowledge graph) across Q1-Q2 2026.
 
 **Key principles:**
+
 - Additive schema evolution (no breaking changes)
 - Temporal validity on all time-dependent facts
 - Confidence + decay on causal edges

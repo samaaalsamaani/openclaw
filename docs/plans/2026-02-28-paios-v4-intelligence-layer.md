@@ -9,12 +9,14 @@
 **Tech Stack:** Python 3.14, Memgraph (bolt://localhost:7687), graphiti-core 0.30.0rc5, neo4j async driver. All scripts at `~/.openclaw/projects/graph/v4/`. Run with `~/.openclaw/.venv/bin/python3`.
 
 **Critical data facts discovered during planning:**
+
 - `outcome_rating` is NULL for ALL 2,651 decisions — learning loop must use Graphiti episode mining, not the DB column
 - `valid_until` is NULL for all 71 beliefs — no expiry data in source
 - decisions DO have `rationale` text — Graphiti can extract entities from them
 - Source DB: `agent_id` field does not exist in any SQLite table — derive from `db_name + table_name`
 
 **Run any verification with:**
+
 ```bash
 ~/.openclaw/.venv/bin/python3 ~/.openclaw/projects/graph/v4/health_check.py
 ```
@@ -30,6 +32,7 @@
 ### Task 1: Add `source` and `agent_id` to all CDC mappings + fix `expired_at` sentinel
 
 **Files:**
+
 - Modify: `~/.openclaw/projects/graph/v4/cdc_worker.py`
 
 **What's broken:** `expired_at = null` is hard-coded as a literal in ON CREATE — it's never set to anything else. `source` and `agent_id` are missing from Decision, Signal, Belief, Score, Artifact, Habit, AutonomyRule, and Approval mappings. Without these, you can't distinguish active from expired facts or trace which system created each node.
@@ -98,6 +101,7 @@ Find the `elif table == "officer_signals":` block. Add `source` and `agent_id` t
 ```
 
 Add to params:
+
 ```python
                 "source":    "kb.sqlite/officer_signals",
                 "agent_id":  f"cdc/officer_signals/{data.get('from_role', 'system')}",
@@ -106,12 +110,14 @@ Add to params:
 **Step 4: Update `thinking_beliefs` mapping**
 
 Same pattern. Add to ON CREATE SET:
+
 ```python
                 b.source         = $source,
                 b.agent_id       = $agent_id,
 ```
 
 Add to params (use `valid_from` if set, else `created_at`):
+
 ```python
                 "valid_at":  _ts(data.get("valid_from") or data.get("created_at"), occurred_at),
                 "source":    "kb.sqlite/thinking_beliefs",
@@ -221,13 +227,14 @@ git commit -m "feat(v4): Task 1 — add source/agent_id to all CDC mappings + ex
 
 ## Phase 2: Structural Relationships
 
-> **Goal:** Wire the edges that make this a *knowledge* graph. Moment nodes for temporal anchoring, AutonomyRule→Approval for feedback loop, Event causal chains.
+> **Goal:** Wire the edges that make this a _knowledge_ graph. Moment nodes for temporal anchoring, AutonomyRule→Approval for feedback loop, Event causal chains.
 
 ---
 
 ### Task 2: Create Moment nodes and temporal anchoring edges
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/v4/wire_edges.py`
 - Modify: `~/.openclaw/projects/graph/v4/memgraph_driver.py`
 
@@ -498,6 +505,7 @@ if __name__ == "__main__":
 ```
 
 Expected output:
+
 ```
 Creating Moment nodes from Event timestamps...
   Moment nodes from events: ~300 (one per unique day in 7,843 events)
@@ -586,6 +594,7 @@ git commit -m "feat(v4): Task 2 — Moment nodes + HAPPENED_ON/DECIDED_ON/CAUSED
 ### Task 3: Add Outcome and Lesson node types to schema
 
 **Files:**
+
 - Modify: `~/.openclaw/projects/graph/v4/memgraph_driver.py`
 
 **What this builds:** The schema foundation for the learning loop. Without these node types, the `learning_loop.py` script has nowhere to write.
@@ -638,11 +647,13 @@ git commit -m "feat(v4): Task 3 — Outcome and Lesson node type indexes"
 ### Task 4: Build `learning_loop.py`
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/v4/learning_loop.py`
 
 **Background:** `outcome_rating` is NULL for all 2,651 decisions in the source DB — there is no structured outcome data. Instead, outcomes must be detected from the Graphiti episode graph: when a conversation mentions a past decision and discusses its result, that's an outcome signal.
 
 This script does two things:
+
 1. Detects outcomes from Graphiti episodes (semantic search for decision mentions)
 2. Distills repeated outcomes into Lessons with confidence scores
 
@@ -1058,9 +1069,11 @@ git commit -m "feat(v4): Task 4 — learning loop (Outcome/Lesson nodes, weekly 
 ### Task 5: Build `retroactive_miner.py`
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/v4/retroactive_miner.py`
 
 **Background:** The Graphiti episode graph has 2 nodes (test episodes). 2,651 decisions and 163 beliefs in Memgraph have text that Graphiti can extract entities, relationships and contradictions from. Mining them retroactively will:
+
 1. Create 2,000+ Episodic nodes with correct historical `reference_time`
 2. Extract 5,000+ Entity nodes (people, projects, concepts, tools)
 3. Create 10,000+ RELATES_TO edges between entities
@@ -1323,6 +1336,7 @@ if __name__ == "__main__":
 ```
 
 Expected:
+
 ```
 DRY RUN: would mine decision_1: Decision: Launch Claude Code Security Feature...
 DRY RUN: would mine decision_2: ...
@@ -1442,6 +1456,7 @@ git commit -m "feat(v4): Task 5 — retroactive miner: 2651 decisions + 234 beli
 ### Task 6: Update health_check.py and HEARTBEAT.md for new components
 
 **Files:**
+
 - Modify: `~/.openclaw/projects/graph/v4/health_check.py`
 - Modify: `~/.openclaw/workspace/HEARTBEAT.md`
 
@@ -1456,6 +1471,7 @@ In `run_checks()`, find the node counts section. Add Episodic, Entity, Moment, O
 ```
 
 Also update `MIN_COUNTS`:
+
 ```python
 MIN_COUNTS = {
     "Event":    1000,
@@ -1489,22 +1505,26 @@ After the node counts section, add:
 
 In `HEARTBEAT.md`, find Tier 7 — Weekly (Sunday):
 
-```markdown
+````markdown
 #### Graph Learning Loop (Sunday 03:00)
+
 ```bash
 ~/.openclaw/.venv/bin/python3 ~/.openclaw/projects/graph/v4/learning_loop.py all 50
 ```
+````
+
 - Detect outcomes from recent Graphiti episodes (last 50 decisions)
 - Distill patterns into Lessons
 - Apply confidence decay to stale Lessons
 - Log results to daily memory
-```
+
+````
 
 **Step 4: Run health check to confirm all green**
 
 ```bash
 ~/.openclaw/.venv/bin/python3 ~/.openclaw/projects/graph/v4/health_check.py
-```
+````
 
 Expected: All ✅ including new Moment, Episodic, edge count checks.
 
@@ -1599,13 +1619,13 @@ Expected: At least some outcomes detected (depends on episode content).
 
 ## Success Metrics
 
-| Metric | Target | How to measure |
-|--------|--------|----------------|
+| Metric              | Target                  | How to measure                                             |
+| ------------------- | ----------------------- | ---------------------------------------------------------- |
 | Temporal properties | 6/6 fields on all nodes | Check Decision node has `source`, `agent_id`, `expired_at` |
-| Edge density | > 10,000 edges | `MATCH ()-[e]->() RETURN count(e)` |
-| Moment nodes | > 300 | `MATCH (m:Moment) RETURN count(m)` |
-| Episodic nodes | > 200 | `MATCH (n:Episodic) RETURN count(n)` |
-| Entity nodes | > 500 | `MATCH (n:Entity) RETURN count(n)` |
-| Temporal query | Returns results | Test 1 above |
-| Context quality | 5+ facts on search | `context_injector.py --query "any topic"` |
-| Learning loop | Runs clean | `learning_loop.py all` exits 0 |
+| Edge density        | > 10,000 edges          | `MATCH ()-[e]->() RETURN count(e)`                         |
+| Moment nodes        | > 300                   | `MATCH (m:Moment) RETURN count(m)`                         |
+| Episodic nodes      | > 200                   | `MATCH (n:Episodic) RETURN count(n)`                       |
+| Entity nodes        | > 500                   | `MATCH (n:Entity) RETURN count(n)`                         |
+| Temporal query      | Returns results         | Test 1 above                                               |
+| Context quality     | 5+ facts on search      | `context_injector.py --query "any topic"`                  |
+| Learning loop       | Runs clean              | `learning_loop.py all` exits 0                             |

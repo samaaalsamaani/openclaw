@@ -9,6 +9,7 @@
 The knowledge graph landscape has fundamentally shifted in 2025-2026. The primary breakthrough is **cost resolution**: LazyGraphRAG (June 2025) eliminated the $33K indexing cost barrier that plagued early GraphRAG. Systems now operate at 10K-100K node scales with incremental updates, hybrid vector-graph architectures are standard practice, and temporal/causal modeling has moved from academic research to production deployment.
 
 **Key Finding:** Production systems in 2026 treat knowledge graphs as dynamic memory substrates with three layers:
+
 1. **Vector layer** (semantic search, embeddings)
 2. **Graph layer** (relationship reasoning, temporal tracking)
 3. **Symbolic layer** (ontology constraints, schema validation)
@@ -21,22 +22,24 @@ This is NOT a "one best choice" landscape anymore—it's about integration patte
 
 ### 1.1 Notion AI / Mem.ai / Obsidian Copilot Comparison
 
-| System | Backend | Graph Type | Update Pattern | Scale |
-|--------|---------|-----------|-----------------|-------|
-| **Notion 2026** | Relational DBs + external graph plugins | Linked relations (property-graph-like) | Batch (on-demand) | 1K-10K nodes |
-| **Mem.ai 2.0** (Spring 2025) | Hybrid: Graph + Vector + KV store | Knowledge graph + embeddings | Incremental + temporal context | 10K-100K nodes |
-| **Obsidian Copilot** | Local vault (Markdown) + external LLM | Zettelkasten links + 70+ MCP tools | Incremental (file watchers) | 1K-50K notes |
-| **Mem0 (Enterprise)** | Unified hybrid (Graph + Vec + KV native) | Property graph + vectors | Real-time incremental | 100K+ nodes |
+| System                       | Backend                                  | Graph Type                             | Update Pattern                 | Scale          |
+| ---------------------------- | ---------------------------------------- | -------------------------------------- | ------------------------------ | -------------- |
+| **Notion 2026**              | Relational DBs + external graph plugins  | Linked relations (property-graph-like) | Batch (on-demand)              | 1K-10K nodes   |
+| **Mem.ai 2.0** (Spring 2025) | Hybrid: Graph + Vector + KV store        | Knowledge graph + embeddings           | Incremental + temporal context | 10K-100K nodes |
+| **Obsidian Copilot**         | Local vault (Markdown) + external LLM    | Zettelkasten links + 70+ MCP tools     | Incremental (file watchers)    | 1K-50K notes   |
+| **Mem0 (Enterprise)**        | Unified hybrid (Graph + Vec + KV native) | Property graph + vectors               | Real-time incremental          | 100K+ nodes    |
 
 **Critical Pattern:** All moving toward **hybrid architectures** that layer vector embeddings with explicit graph structures. Notion is furthest behind (2026 still using relational + plugin graphs), while Mem0 is architecturally ahead with native hybrid storage.
 
 #### Mem.ai Temporal Context (Spring 2025 Innovation)
+
 - Tracks **when** you interact with knowledge (not just the knowledge itself)
 - Builds time-based "recency awareness" into retrieval
 - Powers "show me what I found interesting last quarter" queries
 - **Lesson for PAIOS:** Temporal context is differentiator for personal systems; add interaction timestamps to graph edges, not just facts
 
 #### Obsidian Copilot MCP Tools (2026)
+
 - 70+ tools available through Model Context Protocol
 - Includes: note management, Zettelkasten workflows, Long-Term Memory ops, graph operations
 - Key innovation: **index-free semantic search** (no pre-indexing required)
@@ -48,15 +51,18 @@ This is NOT a "one best choice" landscape anymore—it's about integration patte
 ### 1.2 Microsoft GraphRAG Evolution (2025-2026)
 
 #### Cost Breakthrough: LazyGraphRAG (June 2025)
+
 **Problem:** Original GraphRAG required $20-50 in API costs for 1M tokens (sometimes hundreds of dollars for large corpora).
 
 **Solution:** LazyGraphRAG defers indexing to query time.
+
 - **Indexing cost:** 0.1% of full GraphRAG (identical to vector RAG!)
 - **Accuracy:** Higher than standard GraphRAG (query-specific subgraph extraction)
 - **Use case:** One-off queries, exploratory analysis, streaming data
 - **Production impact:** Viable for personal systems at 10K-100K scale; no $1K+ upfront indexing cost
 
 **Key Architecture:**
+
 ```
 LazyGraphRAG:
   no pre-index summarization
@@ -67,11 +73,13 @@ LazyGraphRAG:
 ```
 
 #### Schema Evolution in GraphRAG
+
 - **Migration approach:** Provide migration notebooks between major versions
 - **Practical guidance:** Don't rely on automatic schema evolution; design schemas to be **property-additive** (new properties don't break old structure)
 - **Reality check:** Full re-indexing is still the norm for major schema changes; plan for it
 
 **Production Insight:** For PAIOS, design schema as:
+
 - **Extensible** (new node/edge types added as needed)
 - **Backward-compatible** (old nodes still readable with new schema)
 - **Versionable** (track schema versions with data migrations)
@@ -82,13 +90,14 @@ LazyGraphRAG:
 
 ### 2.1 Mem0 vs Zep vs Letta Comparison (Production 2025)
 
-| System | Memory Model | Retrieval | Latency | Suited For |
-|--------|-------------|-----------|---------|-----------|
-| **Mem0** | Unified hybrid (Graph + Vec + KV) | Sub-second hybrid retrieval | 1.44s (92% improvement over baseline) | Multi-agent, semantics + relationships |
-| **Zep** | Temporal Knowledge Graph (TKG) | Graph traversal + semantic search | ~1-2s with filtering | Enterprise, complex business rules |
-| **Letta** | Self-editing memory blocks | Explicit agent-managed state | Agent-controlled | Single powerful agent, transparent memory |
+| System    | Memory Model                      | Retrieval                         | Latency                               | Suited For                                |
+| --------- | --------------------------------- | --------------------------------- | ------------------------------------- | ----------------------------------------- |
+| **Mem0**  | Unified hybrid (Graph + Vec + KV) | Sub-second hybrid retrieval       | 1.44s (92% improvement over baseline) | Multi-agent, semantics + relationships    |
+| **Zep**   | Temporal Knowledge Graph (TKG)    | Graph traversal + semantic search | ~1-2s with filtering                  | Enterprise, complex business rules        |
+| **Letta** | Self-editing memory blocks        | Explicit agent-managed state      | Agent-controlled                      | Single powerful agent, transparent memory |
 
 #### Mem0 Hybrid Architecture (Recommended for PAIOS)
+
 ```
 Memory Pipeline:
   1. Input: Conversation, facts, events
@@ -108,6 +117,7 @@ Memory Pipeline:
 **Performance:** 92% latency improvement, significant token reduction.
 
 #### Zep Temporal Knowledge Graph (Enterprise Pattern)
+
 ```
 TKG Structure:
   Facts + Timestamps
@@ -119,6 +129,7 @@ TKG Structure:
 **Key advantage:** Natural representation of "what changed and when," important for event sequences and causal chains.
 
 #### Letta Self-Editing Memory (Transparency Pattern)
+
 ```
 Agent-Managed State:
   - Memory blocks (editable by agent via tools)
@@ -132,6 +143,7 @@ Agent-Managed State:
 ### 2.2 Recommended Hybrid Approach for PAIOS
 
 **Combine elements:**
+
 1. **Mem0 model** for hybrid retrieval (vector + graph + KV)
 2. **Zep's temporal tracking** (timestamp facts, track validity)
 3. **Letta's transparency** (agents explicitly curate what's memorable)
@@ -153,25 +165,28 @@ PAIOS Hybrid Memory:
 
 #### Quick Decision Matrix
 
-| Property | Labeled Property Graph (LPG) | RDF | Notes |
-|----------|-----|-----|-------|
-| **Speed** | Fast (compact, traversal-optimized) | Slower (reasoning overhead) | LPG wins for retrieval at 10K-100K scale |
-| **Schema Flexibility** | Very high (add properties on-the-fly) | Medium (ontology constraints) | LPG best for evolving schemas |
-| **Semantic Rigor** | Medium (informal semantics) | High (W3C standards, RDFS/OWL reasoning) | RDF for compliance, LPG for speed |
-| **Global Interop** | Local (great within system) | Global (web-scale identifiers) | LPG for personal systems, RDF for federation |
-| **Embedding Support** | Native (vectors on nodes/edges) | Addon (separate embedding model) | LPG better integrated with modern AI |
-| **Schema Evolution** | Easy (add property = no migration) | Hard (ontology changes require mapping) | **LPG strongly recommended** |
+| Property               | Labeled Property Graph (LPG)          | RDF                                      | Notes                                        |
+| ---------------------- | ------------------------------------- | ---------------------------------------- | -------------------------------------------- |
+| **Speed**              | Fast (compact, traversal-optimized)   | Slower (reasoning overhead)              | LPG wins for retrieval at 10K-100K scale     |
+| **Schema Flexibility** | Very high (add properties on-the-fly) | Medium (ontology constraints)            | LPG best for evolving schemas                |
+| **Semantic Rigor**     | Medium (informal semantics)           | High (W3C standards, RDFS/OWL reasoning) | RDF for compliance, LPG for speed            |
+| **Global Interop**     | Local (great within system)           | Global (web-scale identifiers)           | LPG for personal systems, RDF for federation |
+| **Embedding Support**  | Native (vectors on nodes/edges)       | Addon (separate embedding model)         | LPG better integrated with modern AI         |
+| **Schema Evolution**   | Easy (add property = no migration)    | Hard (ontology changes require mapping)  | **LPG strongly recommended**                 |
 
 **PAIOS Recommendation:** Use **Labeled Property Graphs** (Kuzu, Neo4j, or similar).
 
 **Why:**
+
 - Schema evolution is pain-free (properties added without breaking existing structure)
 - Fast enough for 10K-100K scale
 - Native vector support
 - Can serialize to RDF later if needed (S3PG transformation standard exists)
 
 #### Migration Path
+
 If you later need RDF (for federation/compliance):
+
 - **S3PG approach:** Transform LPG → RDF using standardized schemas (SHACL for RDF shape constraints, PG-Schema for property graph constraints)
 - No data loss; information-preserving transformation
 - Exists as published technique as of 2025
@@ -179,6 +194,7 @@ If you later need RDF (for federation/compliance):
 ### 3.2 Schema Evolution Best Practices
 
 #### Pattern 1: Additive Schema Evolution (Recommended)
+
 ```
 Version 1: nodes have [id, label, name, created_at]
 Version 2: nodes have [id, label, name, created_at, enrichment_status]
@@ -190,6 +206,7 @@ Pattern: Add properties, don't remove or rename without versioning
 ```
 
 #### Pattern 2: Node Type Evolution
+
 ```
 Version 1: Event nodes only
 Version 2: Add Signal nodes + Belief nodes
@@ -199,6 +216,7 @@ Version 2: Add Signal nodes + Belief nodes
 ```
 
 #### Pattern 3: Relationship Type Evolution
+
 ```
 Version 1: Event -> [causedBy] -> Event
 Version 2: Event -> [causedBy|enabledBy|triggeredBy] -> Event
@@ -228,6 +246,7 @@ FARO Structure:
 ```
 
 **Key Innovation:** Distinguishes between **events** (discrete occurrences) and **conditions** (states), allowing:
+
 ```
 Condition: "Market was bullish"
   enables
@@ -239,16 +258,18 @@ Condition: "Market was bullish"
 #### Practical FARO Implementation for PAIOS
 
 Your current schema (8 node types):
+
 ```
 Moment, Event, Signal, Decision, Lesson, Belief, Entity, Artifact
 ```
 
 Maps to FARO + domain extensions:
+
 ```
 FARO Core:
   Event → captures temporal moments
   Condition → captures beliefs, signals
-  
+
 PAIOS Extensions:
   Decision → event with outcome tracking
   Lesson → semantic learning from Event/Decision
@@ -258,18 +279,18 @@ PAIOS Extensions:
 
 #### 25+ Relationship Types (Subset for PAIOS)
 
-| Category | Relationship | Direction | Example |
-|----------|-------------|-----------|---------|
-| **Causal** | causes | →  | Decision X causes Event Y |
-| | enables | → | Signal X enables Decision Y |
-| | prevents | → | Belief X prevents Decision Y |
-| **Temporal** | precedes | → | Event A precedes Event B |
-| | during | → | Event A happened during Event B |
-| | entails | → | Event A entails Event B (if A, then B) |
-| **Learning** | teaches | → | Decision A teaches Lesson B |
-| | explains | → | Belief A explains Signal B |
-| **Meta** | corrects | → | Lesson A corrects Decision B |
-| | improves_upon | → | Decision B improves_upon Decision A |
+| Category     | Relationship  | Direction | Example                                |
+| ------------ | ------------- | --------- | -------------------------------------- |
+| **Causal**   | causes        | →         | Decision X causes Event Y              |
+|              | enables       | →         | Signal X enables Decision Y            |
+|              | prevents      | →         | Belief X prevents Decision Y           |
+| **Temporal** | precedes      | →         | Event A precedes Event B               |
+|              | during        | →         | Event A happened during Event B        |
+|              | entails       | →         | Event A entails Event B (if A, then B) |
+| **Learning** | teaches       | →         | Decision A teaches Lesson B            |
+|              | explains      | →         | Belief A explains Signal B             |
+| **Meta**     | corrects      | →         | Lesson A corrects Decision B           |
+|              | improves_upon | →         | Decision B improves_upon Decision A    |
 
 ### 4.2 Temporal Knowledge Graph Reasoning (2025 Research)
 
@@ -285,6 +306,7 @@ TKG Reasoning Challenge:
 ```
 
 **Practical Implementation (2026):**
+
 ```
 TKG Store with temporal reasoning:
   1. Every edge has [start_time, end_time]
@@ -294,6 +316,7 @@ TKG Store with temporal reasoning:
 ```
 
 **For PAIOS:**
+
 - Store decision → outcome edges with confidence score
 - Update confidence as time passes and outcomes validate
 - Use temporal filters in queries: "what caused recent failures?"
@@ -305,6 +328,7 @@ TKG Store with temporal reasoning:
 ### 5.1 Graphiti Pattern: Real-Time TKG (2025)
 
 **Architecture:**
+
 ```
 Streaming Input: New events, facts, conversations
   ↓
@@ -327,6 +351,7 @@ Query Available Immediately:
 **Key Advantage:** No indexing bottleneck. Graph is always fresh.
 
 #### Implementation for PAIOS
+
 ```
 Daily Ingestion Pipeline:
   1. Parse daily events (from logs, observations)
@@ -357,6 +382,7 @@ Unified KG (single source of truth)
 ```
 
 **For PAIOS:** You have multiple sources:
+
 - Calendar events
 - Chat logs
 - Decision records
@@ -372,6 +398,7 @@ Use incremental ingestion patterns to avoid full rebuilds when new sources come 
 ### 6.1 Architecture Patterns at Scale
 
 #### Vector Storage at Scale (Memgraph 2025 approach)
+
 ```
 Challenge: 100K nodes × multiple embedding dimensions = huge memory
 Solution (Memgraph Advanced Vector Search):
@@ -382,6 +409,7 @@ Solution (Memgraph Advanced Vector Search):
 ```
 
 **For PAIOS:** At 10K-100K scale, consider:
+
 - sqlite-vec for local vector storage (SQLite integrated)
 - Kuzu for graph (optimized for this scale)
 - Hybrid materialization (compute indices during batch updates, not query-time)
@@ -389,6 +417,7 @@ Solution (Memgraph Advanced Vector Search):
 #### Query Patterns at Scale (16-Layer Architecture Pattern, 2025)
 
 Production systems use multi-layer orchestration:
+
 ```
 Layer 1-3: API Gateway, Query Router, Cost Optimizer
   → Route to cheapest index strategy
@@ -410,6 +439,7 @@ Layer 11-16: Storage, Caching, Monitoring
 ```
 
 **For PAIOS:** Implement cost-aware routing:
+
 ```
 Query: "What caused the recent dashboard crash?"
   Route 1: Vector search (semantically similar past incidents) + Graph traversal (causality edges)
@@ -421,11 +451,11 @@ Query: "What caused the recent dashboard crash?"
 
 From production systems:
 
-| Scale | Query Latency | Retrieval Cost | Index Maintenance |
-|-------|---|---|---|
-| 10K nodes | <100ms | <$0.01/query | Batch daily |
-| 100K nodes | 100-500ms | $0.01-0.05/query | Batch weekly |
-| 1M nodes (enterprise) | 500-2000ms | $0.05-0.20/query | Hybrid batch+incremental |
+| Scale                 | Query Latency | Retrieval Cost   | Index Maintenance        |
+| --------------------- | ------------- | ---------------- | ------------------------ |
+| 10K nodes             | <100ms        | <$0.01/query     | Batch daily              |
+| 100K nodes            | 100-500ms     | $0.01-0.05/query | Batch weekly             |
+| 1M nodes (enterprise) | 500-2000ms    | $0.05-0.20/query | Hybrid batch+incremental |
 
 **PAIOS Target:** 100K-1M scale at <500ms latency with incremental updates (no full reindex).
 
@@ -455,7 +485,7 @@ AutoSchemaKG (ATLAS, 50M documents, 900M nodes):
 
 ```
 Traditional: "Company" → "founded in" → "Location"
-AutoSchemaKG: 
+AutoSchemaKG:
   "Company" → [caused/participated in] → "Founding Event"
   "Founding Event" → [occurred in] → "Location"
   "Founding Event" → [temporal_precedes] → "IPO Event"
@@ -498,7 +528,7 @@ PRKG Entities:
   Tools & Equipment
   Courses Taught
   Collaborators
-  
+
 PRKG Relationships:
   authored → Publication
   presented at → Conference
@@ -513,6 +543,7 @@ PRKG Relationships:
 #### Applying to PAIOS (Personal Operating System)
 
 **Adapt PRKG to personal domain:**
+
 ```
 PAIOS Personal Graph Entities:
   Goals (current, past, abandoned)
@@ -570,6 +601,7 @@ Keyword/FTS (Best For):
 ### 9.2 Hybrid Retrieval Patterns (2025)
 
 #### Pattern A: Union (Fastest)
+
 ```
 Query: "How can I improve sales?"
   Vector search: docs about sales, growth, revenue
@@ -578,6 +610,7 @@ Query: "How can I improve sales?"
 ```
 
 #### Pattern B: Sequential (Most Accurate)
+
 ```
 Query: "What decisions led to losing the big contract?"
   Step 1: Vector search → find related decisions + losses
@@ -587,6 +620,7 @@ Query: "What decisions led to losing the big contract?"
 ```
 
 #### Pattern C: RRF Fusion (Balanced)
+
 ```
 Reciprocal Rank Fusion (2025 standard):
   Vector results ranked 1,2,3...
@@ -596,6 +630,7 @@ Reciprocal Rank Fusion (2025 standard):
 ```
 
 #### Pattern D: Graph-Guided Vectors (Advanced)
+
 ```
 Embed nodes considering graph structure:
   embedding = semantic_embedding + structural_embedding
@@ -632,48 +667,58 @@ Results: Unified ranked list (best of all signals)
 ### 10.1 Indexing & Cost Traps
 
 **Trap 1: Full upfront indexing (2024 problem)**
+
 - Solution: LazyGraphRAG or query-time indexing
 - For PAIOS: Index incrementally during batch updates, not on every write
 
 **Trap 2: Schema changes requiring full rebuild**
+
 - Solution: Design for additive schema evolution
 - For PAIOS: Don't delete/rename properties; add new ones
 
 **Trap 3: Embedding maintenance (vector drift)**
+
 - Solution: Periodic re-embedding (weekly/monthly)
 - For PAIOS: Track embedding version; re-embed when models change
 
 ### 10.2 Temporal Modeling Pitfalls
 
 **Trap 1: Storing "when did this happen?" but not "is this still true?"**
+
 - Solution: Temporal validity intervals (start_time, end_time)
 - For PAIOS: Store confidence + decay over time
 
 **Trap 2: Causal edges without directionality**
+
 - Solution: Use directed edges with semantic labels
 - For PAIOS: distinguishes "A causes B" from "B causes A" or "A enables B"
 
 **Trap 3: Missing temporal reasoning in queries**
+
 - Solution: Query-time temporal filtering
 - For PAIOS: "find causes of recent failures" not just "find causes"
 
 ### 10.3 Multi-Source Data Integration
 
 **Trap 1: Assuming all sources have same schema**
+
 - Solution: Schema mapping + conflict resolution rules
 - For PAIOS: Define priority (calendar > logs > external) for conflicts
 
 **Trap 2: Not tracking data lineage**
+
 - Solution: Store source + confidence for every node/edge
 - For PAIOS: Why do we know this? Which system told us?
 
 **Trap 3: Manual deduplication**
+
 - Solution: Entity resolution at ingestion time
 - For PAIOS: Use semantic similarity + manual overrides for entity merging
 
 ### 10.4 Kuzu-Specific Gotchas (Your Choice)
 
 From your memory context:
+
 - Kuzu uses INT64 not INTEGER
 - Kuzu uses STRING not TIME (use TIMESTAMP)
 - Monitor for SIGBUS on exit (fixed Feb 28 in your implementation)
@@ -685,12 +730,14 @@ From your memory context:
 ## 11. Implementation Roadmap for PAIOS (Feb 28 → Q2 2026)
 
 ### Phase 0: Baseline (Current)
+
 - [x] Kuzu graph: 13,046 nodes, 10K edges
 - [x] SQLite-vec: embeddings indexed
 - [x] 8 node types: Moment, Event, Signal, Decision, Lesson, Belief, Entity, Artifact
 - [x] 16 edge types: temporal, causality, learning, intelligence, entity, artifact, meta
 
 **Current State Metrics:**
+
 - Query latency: 0.5-7.9ms (443x faster than target)
 - Enrichment: ~21 Signals, 50 Beliefs, 26 Lessons, 1,000 causal edges
 - Sync: Hot (15min), Warm (1hr), Cold (daily)
@@ -698,12 +745,14 @@ From your memory context:
 ### Phase 1: Temporal & Causal Reasoning (Q1 2026 → Ongoing)
 
 **Add:**
+
 1. Temporal validity intervals to all edges (start_time, end_time)
 2. Causal confidence scores (0.0-1.0) + decay over time
 3. FARO relationship type expansion (25+ types)
 4. TKG reasoning queries (temporal + causal chains)
 
 **Metrics:**
+
 - Support "find root causes within last 7 days" queries
 - Causal chains up to depth 5 with confidence
 - Temporal validity filtering in all queries
@@ -711,12 +760,14 @@ From your memory context:
 ### Phase 2: Schema Evolution & Version Management (Q1-Q2 2026)
 
 **Add:**
+
 1. Schema versioning (v1, v2, v3...)
 2. Backward compatibility validation
 3. Migration tracking (which nodes use which schema version)
 4. Additive schema extension framework
 
 **Metrics:**
+
 - Zero-downtime schema updates
 - Queries work across schema versions
 - Migration audit trail
@@ -724,12 +775,14 @@ From your memory context:
 ### Phase 3: Multi-Source Incremental Ingestion (Q2 2026)
 
 **Add:**
+
 1. Source tracking (which data came from which system)
 2. Conflict resolution rules (priority order for multi-source facts)
 3. Incremental update patterns (not full rebuild)
 4. Entity deduplication at ingestion
 
 **Metrics:**
+
 - New data sources integrated without full KG rebuild
 - Lineage tracking for every node/edge
 - Sub-second incremental updates
@@ -737,12 +790,14 @@ From your memory context:
 ### Phase 4: Hybrid Retrieval Optimization (Q2 2026)
 
 **Add:**
+
 1. RRF fusion (vector + graph + keyword results)
 2. Cost-aware routing (choose retrieval strategy by cost)
 3. Query-time subgraph extraction (LazyGraphRAG pattern)
 4. Embedding versioning + re-embedding pipeline
 
 **Metrics:**
+
 - Multi-hop reasoning queries <500ms
 - Retrieval cost <$0.01 per complex query
 - 3-5x accuracy improvement (vs vector-only)
@@ -873,6 +928,7 @@ Governance:
 ## Conclusion
 
 The 2025-2026 knowledge graph landscape has converged on **pragmatic hybrid architectures** that:
+
 1. Combine vector + graph + symbolic reasoning
 2. Support incremental updates (no full rebuilds)
 3. Handle schema evolution gracefully
@@ -880,6 +936,7 @@ The 2025-2026 knowledge graph landscape has converged on **pragmatic hybrid arch
 5. Scale to 100K+ nodes with sub-second latency
 
 For PAIOS at 10K-100K scale, **avoid**:
+
 - Full upfront indexing (cost trap)
 - Hand-crafted schemas (use AutoSchemaKG patterns)
 - Static graphs (temporal edges are essential)
@@ -887,6 +944,7 @@ For PAIOS at 10K-100K scale, **avoid**:
 - Manual entity deduplication (automate it)
 
 **Implement**:
+
 - Kuzu + sqlite-vec hybrid
 - FARO-based relationship types
 - Temporal validity intervals

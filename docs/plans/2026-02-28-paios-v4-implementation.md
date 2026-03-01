@@ -23,6 +23,7 @@
 ### Task 1: Install Memgraph and validate Graphiti compatibility
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/v4/test_memgraph_graphiti.py`
 
 **Step 1: Pull and run Memgraph via Docker**
@@ -52,6 +53,7 @@ docker exec memgraph mgconsole --eval "RETURN 'ok' AS status;"
 ```
 
 Expected:
+
 ```
 +-----------+
 | status    |
@@ -145,6 +147,7 @@ if __name__ == "__main__":
 ```
 
 Expected output (all 5 checks pass):
+
 ```
 Connecting to Memgraph via Graphiti...
 [1] Build indices and constraints...
@@ -186,6 +189,7 @@ git commit -m "feat(v4): Phase 0 validation — Graphiti+Memgraph compatible"
 ### Task 2: Create Memgraph schema and Graphiti initializer
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/v4/schema.py`
 - Create: `~/.openclaw/projects/graph/v4/client.py`
 
@@ -371,6 +375,7 @@ git commit -m "feat(v4): Memgraph schema — constraints, indexes, Graphiti indi
 ### Task 3: Deploy CDC triggers to all 5 SQLite databases
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/v4/cdc_triggers.py`
 
 **Background:** CDC (Change Data Capture) triggers write a row to `cdc_events` after every INSERT/UPDATE/DELETE on monitored tables. The CDC worker (Task 4) reads these rows and syncs to Memgraph. Triggers are idempotent — safe to run multiple times.
@@ -554,6 +559,7 @@ if __name__ == "__main__":
 ```
 
 Expected:
+
 ```
 ✅ observability.sqlite → events (trigger deployed)
 ✅ kb.sqlite → decisions (trigger deployed)
@@ -604,6 +610,7 @@ git commit -m "feat(v4): CDC triggers on all 5 SQLite DBs — 150ms real-time sy
 ### Task 4: Build and deploy the CDC worker
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/v4/cdc_worker.py`
 - Create: `~/.openclaw/cron/ai.openclaw.graph-cdc-worker.plist`
 
@@ -1018,6 +1025,7 @@ git commit -m "feat(v4): CDC worker + launchd plists — 100ms real-time SQLite�
 ### Task 5: Backfill all historical data into Memgraph
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/v4/backfill.py`
 
 **Step 1: Create backfill script**
@@ -1128,6 +1136,7 @@ if __name__ == "__main__":
 ```
 
 Expected output:
+
 ```
 PAIOS v4 Backfill — loading historical data into Memgraph
 ============================================================
@@ -1184,6 +1193,7 @@ git commit -m "feat(v4): backfill complete — 11K+ nodes in Memgraph with tempo
 ### Task 6: Build the conversation miner
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/v4/conversation_miner.py`
 
 **Background:** This is the most important file in the entire v4 architecture. Every AI conversation is automatically mined post-session. Graphiti's LLM extraction handles entity identification, relationship detection, and conflict resolution. The graph compounds with every use.
@@ -1310,6 +1320,7 @@ if __name__ == "__main__":
 ```
 
 Expected:
+
 ```json
 {
   "mined": true,
@@ -1357,6 +1368,7 @@ git commit -m "feat(v4): conversation miner — every AI session feeds the tempo
 ### Task 7: Wire Claude Code Stop hook
 
 **Files:**
+
 - Modify: `~/.claude/settings.json`
 
 **Step 1: Read current Claude Code settings**
@@ -1470,6 +1482,7 @@ git commit -m "feat(v4): Claude Code Stop hook — sessions automatically mined 
 ### Task 8: Build the context injector
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/v4/context_injector.py`
 
 **Background:** Before any AI interaction, this module queries the temporal graph for relevant context and returns formatted text for system prompt injection. Makes every AI session aware of your current beliefs, recent decisions, and applicable lessons.
@@ -1604,6 +1617,7 @@ git commit -m "feat(v4): context injector — temporal graph context before ever
 ### Task 9: Build the pattern detector (proactive surfacing)
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/v4/pattern_detector.py`
 - Create: `~/.openclaw/cron/ai.openclaw.graph-pattern-detector.plist`
 
@@ -1781,6 +1795,7 @@ git commit -m "feat(v4): pattern detector — proactive surfacing every 4 hours 
 ### Task 10: Update MCP server tools to query Memgraph/Graphiti
 
 **Files:**
+
 - Modify: `~/.openclaw/projects/graph/mcp-server.ts`
 
 **Step 1: Read current MCP server tools**
@@ -1876,6 +1891,7 @@ git commit -m "feat(v4): MCP bridge — graph tools now query Graphiti/Memgraph"
 ### Task 11: 24-hour validation and system health check
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/v4/health_check.py`
 
 **Step 1: Create health check**
@@ -2165,11 +2181,11 @@ Expected: Exit 0, no errors.
 
 ## Success Metrics
 
-| Metric | Target | How to measure |
-|--------|--------|----------------|
-| CDC latency | p95 < 300ms | Latency test above |
-| Mining coverage | 100% of Claude Code sessions | Check `conversation-mining.log` after each session |
-| Backlog | < 10 unprocessed CDC events | Health check |
-| Node count growth | Increases daily | `health_check.py` node counts |
-| Context injection | Returns facts within 3s | `context_injector.py` timing |
-| Pattern detector | Runs clean every 4h | `graph-pattern-detector.log` |
+| Metric            | Target                       | How to measure                                     |
+| ----------------- | ---------------------------- | -------------------------------------------------- |
+| CDC latency       | p95 < 300ms                  | Latency test above                                 |
+| Mining coverage   | 100% of Claude Code sessions | Check `conversation-mining.log` after each session |
+| Backlog           | < 10 unprocessed CDC events  | Health check                                       |
+| Node count growth | Increases daily              | `health_check.py` node counts                      |
+| Context injection | Returns facts within 3s      | `context_injector.py` timing                       |
+| Pattern detector  | Runs clean every 4h          | `graph-pattern-detector.log`                       |

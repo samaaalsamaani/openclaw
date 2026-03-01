@@ -25,6 +25,7 @@ Fixing items 1–3 will reduce rate-limit hits by an estimated 40–60%.
 **File:** `/Users/user/Desktop/projects/openclaw/CLAUDE.md` (106 lines)
 
 ### Strengths
+
 - Precise, actionable content. No vague filler.
 - The footgun warnings (GitHub heredoc, backtick issue) are excellent — these prevent recurring errors.
 - Multi-agent safety section is clear and correct.
@@ -33,19 +34,23 @@ Fixing items 1–3 will reduce rate-limit hits by an estimated 40–60%.
 ### Issues
 
 **1. "Peter" hardcoded (line 25)**
+
 ```
 - When Peter asks for links, use full `https://docs.openclaw.ai/...` URLs.
 ```
+
 This is baked into every session's context, including all sub-agents. They have no idea who Peter is. Either remove it or make it generic: `"When the user asks for doc links..."`.
 
 **2. Signal/Fly deployment command (~150 tokens)**
 The Fly SSH console command + machine ID is specific one-off operational knowledge that rarely applies. When it does apply, you'd reference it directly. Storing it permanently in every session's context is a token tax. Consider moving to a separate `OPERATIONS.md` that you load on demand.
 
 **3. Channels list is a token sink**
+
 ```
 Core: src/telegram, src/discord, src/slack, src/signal, src/imessage, src/web, src/channels, src/routing
 Extensions: extensions/* (msteams, matrix, zalo, zalouser, voice-call)
 ```
+
 This 2-line list is only relevant when refactoring channel logic. Moving to a comment in the source directory (or a referenced file) would save ~100 tokens per session without losing value.
 
 **4. No sub-agent model guidance**
@@ -64,6 +69,7 @@ The "Commits: `scripts/committer "<msg>" <file...>`" line is correct but sub-age
 **Limit:** 200 lines (content after line 200 is truncated and invisible to Claude)
 
 ### Strengths
+
 - Critical Corrections section is outstanding — exactly the right type of memory: things that are wrong by default and will repeatedly bite you.
 - Gotchas section (SQLite, APIs, Memgraph) is high-signal and saves real debugging time.
 - Subsystem reference links are a clean pattern for deep context on demand.
@@ -71,21 +77,26 @@ The "Commits: `scripts/committer "<msg>" <file...>`" line is correct but sub-age
 ### Issues
 
 **1. Stale date anchor in System Snapshot**
+
 ```
 ## System Snapshot (Feb 28 — PAIOS v4 COMPLETE, v3.0 stabilization ongoing)
 ```
+
 This will be wrong next week. The heading embeds a date that ages. Better: `## System Snapshot (v3.0)` — version anchors age more gracefully than dates.
 
 **2. "Stale 0-byte placeholders" section (4 lines)**
 Documenting broken state as a permanent workaround in memory is a code smell. These files should either be deleted or the section should say "TODO: delete these". Keeping it as "ignore these" means they'll exist forever.
 
 **3. `graph.md` reference marked SUPERSEDED**
+
 ```
 - [graph.md](subsystems/graph.md) — **SUPERSEDED** — Kuzu era archived. v4 is Memgraph.
 ```
+
 If it's superseded, remove the link. It wastes a line and invites confusion. The Memgraph reference in PAIOS v4 section is sufficient.
 
 **4. Active Work section is partially stale (3 items)**
+
 - `Retroactive mine` — listed as "Background, ~$9 total, safe to let run." This has been running since Feb 28. It may be done. Check and update or remove.
 - `Learning loop` — "Will seed first Outcomes/Lessons after mine completes" — if mine is done, this should now say "run immediately" or "complete".
 - These stale entries consume 5 lines that could be freed for current context.
@@ -94,15 +105,18 @@ If it's superseded, remove the link. It wastes a line and invites confusion. The
 The full DB path list with file sizes (6 lines) is correct but sizes go stale. The paths matter; the sizes don't. Trim the sizes.
 
 **6. LLM Routing section has retired information**
+
 ```
 - **Retired tier names**: `code`, `vision` (now domain-only)...
 ```
+
 Once the TIER_ALIASES shim is stable, the retired names are irrelevant context noise. This section could be cut to 3 lines.
 
 **7. Approaching truncation limit**
 At 141 lines, adding 60 more lines hits the invisible wall. The Gotchas section alone is 40+ lines — the most valuable section — and it's near the bottom. If memory grows, it gets cut first. Consider moving Gotchas to a separate `gotchas.md` and linking from MEMORY.md.
 
 ### Current line budget estimate
+
 - Headers/spacing: ~20 lines
 - Critical Corrections: 12 lines
 - System Snapshot + DB paths: 18 lines
@@ -137,11 +151,13 @@ At 141 lines, adding 60 more lines hits the invisible wall. The Gotchas section 
 ```
 
 Six API keys are stored in plaintext in settings.json. This file is:
+
 - Readable by any process running as your user
 - Passed to **every sub-agent session** (all 323 sessions on Feb 26 received all 6 keys)
 - Sub-agents doing file reads don't need OpenRouter, ElevenLabs, or Deepgram keys
 
 The gateway already reads credentials from `auth-profiles.json`. These env keys are for Claude Code hooks and scripts that call APIs directly. Consider:
+
 1. Moving them to a `.env` file sourced by hooks only (not injected globally)
 2. Or at minimum, only including the keys actually used by hooks (`OPENROUTER_API_KEY` for some scripts; the others appear unused by hooks)
 
@@ -164,11 +180,13 @@ The current patterns are reasonable for productivity but have some gaps:
 ```json
 "^(pnpm|npm|bun|node|python|uv) (?!.*uninstall)"
 ```
+
 This auto-approves `node /path/to/any/script.js`. Any hook or agent that writes then executes a Node script bypasses confirmation. Consider tightening to known-safe paths.
 
 ```json
 "^curl -s"
 ```
+
 Silent curl is auto-approved. This could silently exfiltrate data to an attacker-controlled URL if an agent were compromised. Consider `^curl -s https://` to at least require HTTPS, or add a domain allowlist.
 
 ### Missing: Sub-agent concurrency cap
@@ -228,6 +246,7 @@ The check logic has a minor gap: it only catches `"todo:" ... "implement"` (both
 **Does:** Reads full transcript, builds a summary, ingests to KB
 
 This is the most expensive hook. For every sub-agent session that ends, it:
+
 1. Reads the entire transcript
 2. Parses JSON entries
 3. Calls `deep-ingest.js` (SQLite write + embedding)
@@ -255,17 +274,18 @@ Both have `timeout: 15` (synchronous). If `teammate-idle.sh` or `task-completed.
 
 **7 servers auto-start per session:**
 
-| Server | Weight | Sub-agents need it? |
-|---|---|---|
-| `knowledge-base` | Heavy (Node + SQLite) | Rarely |
-| `observability` | Medium (Node + SQLite) | No |
-| `macos-system` | Light | No |
-| `session-analytics` | Unknown | No |
-| `task-router` | Unknown | No |
-| `codex-cli` | Medium | No |
-| `google-workspace` | Heavy (uvx Python) | Never |
+| Server              | Weight                 | Sub-agents need it? |
+| ------------------- | ---------------------- | ------------------- |
+| `knowledge-base`    | Heavy (Node + SQLite)  | Rarely              |
+| `observability`     | Medium (Node + SQLite) | No                  |
+| `macos-system`      | Light                  | No                  |
+| `session-analytics` | Unknown                | No                  |
+| `task-router`       | Unknown                | No                  |
+| `codex-cli`         | Medium                 | No                  |
+| `google-workspace`  | Heavy (uvx Python)     | Never               |
 
 Every Claude Code session — including all sub-agents — spawns all 7. That's 7 child processes per session. The debug logs confirm they all start fresh per session:
+
 ```
 MCP server "macos-system": Successfully connected to stdio server in 84ms
 ```
@@ -273,6 +293,7 @@ MCP server "macos-system": Successfully connected to stdio server in 84ms
 The zombie cleanup script (`cleanup-mcp-zombies.sh`) handles abnormal exits, but the normal spawning cost is still real.
 
 **Immediate wins:**
+
 - `google-workspace`: Should only load when explicitly doing calendar/email/docs work. Never needed by sub-agents.
 - `session-analytics` and `task-router`: If these have limited use, move to on-demand loading via ToolSearch rather than always-on.
 
@@ -285,12 +306,14 @@ Claude Code currently doesn't support per-session MCP scoping (all configured se
 The single most impactful missing pattern is a reliable way to detect "I am a sub-agent, not a human-driven session." Every hook, MCP server, and KB ingest would benefit from this.
 
 Current detection opportunities:
+
 1. **Session type**: Claude Code passes session metadata to hooks. Sub-agents spawned via Task tool have a different origin than human-initiated sessions.
 2. **Environment variable**: Set `CLAUDE_SUBAGENT=1` when spawning agents via the `team` skill or GSD executor. Hooks can read this.
 3. **Turn count**: Sub-agents typically have 0 or 1 user turns at SessionEnd. session-learnings.sh could use `user_turns < 2` as a proxy.
 4. **Parent session ID**: Available in the hook JSON. If `parent_session_id` is set, it's a sub-agent.
 
 **Recommended pattern for all hooks:**
+
 ```bash
 # Near top of every hook script
 PARENT_SESSION=$(echo "$INPUT" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('parent_session_id',''))" 2>/dev/null)
@@ -303,22 +326,22 @@ fi
 
 ## Priority Matrix
 
-| Issue | Impact | Effort | Priority |
-|---|---|---|---|
-| Remove `alwaysThinkingEnabled` | High (tokens + cost) | 1 line | **P0** |
-| Add sub-agent guard to session-learnings.sh | High (KB pollution + cost) | 5 lines | **P0** |
-| Add sub-agent guard to kb-auto-ingest.sh | Medium (cost) | 5 lines | **P0** |
-| Move API keys out of settings.json env | High (security) | Medium | **P0** |
-| Add sub-agent guard to gsd-check-update.js | Low-medium | 3 lines | **P1** |
-| Mark TeammateIdle/TaskCompleted as async | Medium (latency) | 2 lines | **P1** |
-| Remove `alwaysThinkingEnabled` | High | 1 line | **P1** |
-| Prune MEMORY.md (stale entries) | Medium (context quality) | 15 min | **P1** |
-| Fix "Peter" in CLAUDE.md | Low | 1 line | **P2** |
-| Move Signal/Fly command out of CLAUDE.md | Low | 2 lines | **P2** |
-| Add Sonnet-default sub-agent guidance to CLAUDE.md | High (rate limits) | 2 lines | **P2** |
-| Increase cleanupPeriodDays to 30 | Low | 1 value | **P2** |
-| Consolidate Gotchas into separate gotchas.md | Medium (memory limit) | 20 min | **P3** |
-| Remove superseded graph.md reference | Low | 1 line | **P3** |
+| Issue                                              | Impact                     | Effort  | Priority |
+| -------------------------------------------------- | -------------------------- | ------- | -------- |
+| Remove `alwaysThinkingEnabled`                     | High (tokens + cost)       | 1 line  | **P0**   |
+| Add sub-agent guard to session-learnings.sh        | High (KB pollution + cost) | 5 lines | **P0**   |
+| Add sub-agent guard to kb-auto-ingest.sh           | Medium (cost)              | 5 lines | **P0**   |
+| Move API keys out of settings.json env             | High (security)            | Medium  | **P0**   |
+| Add sub-agent guard to gsd-check-update.js         | Low-medium                 | 3 lines | **P1**   |
+| Mark TeammateIdle/TaskCompleted as async           | Medium (latency)           | 2 lines | **P1**   |
+| Remove `alwaysThinkingEnabled`                     | High                       | 1 line  | **P1**   |
+| Prune MEMORY.md (stale entries)                    | Medium (context quality)   | 15 min  | **P1**   |
+| Fix "Peter" in CLAUDE.md                           | Low                        | 1 line  | **P2**   |
+| Move Signal/Fly command out of CLAUDE.md           | Low                        | 2 lines | **P2**   |
+| Add Sonnet-default sub-agent guidance to CLAUDE.md | High (rate limits)         | 2 lines | **P2**   |
+| Increase cleanupPeriodDays to 30                   | Low                        | 1 value | **P2**   |
+| Consolidate Gotchas into separate gotchas.md       | Medium (memory limit)      | 20 min  | **P3**   |
+| Remove superseded graph.md reference               | Low                        | 1 line  | **P3**   |
 
 ---
 
@@ -353,6 +376,7 @@ fi
 ### session-learnings.sh (5-line change)
 
 After `user_turns` is computed (~line 90), add:
+
 ```bash
 # Skip for sub-agents (programmatic sessions have < 3 user turns)
 if [ "$USER_TURNS" -lt 3 ] 2>/dev/null; then
@@ -363,6 +387,7 @@ fi
 ### hooks/kb-auto-ingest.sh (3-line change)
 
 After extracting `SESSION_ID`, add:
+
 ```bash
 # Skip for sub-agents
 PARENT_SESSION=$(echo "$INPUT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('parent_session_id',''))" 2>/dev/null)
@@ -372,9 +397,10 @@ if [ -n "$PARENT_SESSION" ]; then exit 0; fi
 ### hooks/gsd-check-update.js (3-line change)
 
 Near the top after reading `process.cwd()`:
+
 ```js
 // Skip for sub-agents (they inherit parent's update check)
-const inputData = JSON.parse(fs.readFileSync('/dev/stdin', 'utf8') || '{}');
+const inputData = JSON.parse(fs.readFileSync("/dev/stdin", "utf8") || "{}");
 if (inputData.parent_session_id) process.exit(0);
 ```
 
@@ -383,6 +409,7 @@ if (inputData.parent_session_id) process.exit(0);
 ## What to Leave Alone
 
 These are working well — don't change them:
+
 - `kb-context-inject.sh` "startup" matcher — already correctly skipped for sub-agents
 - `gsd-context-monitor.js` — already handles sub-agent detection via metrics file
 - `quality-gate.sh` — lightweight, correct, useful

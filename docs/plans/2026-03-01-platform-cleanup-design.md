@@ -17,32 +17,32 @@ All added in commit `68cbbfd0b` ("feat: add Claude configuration validator scrip
 
 ### Delete (17 files)
 
-| File | Reason |
-|------|--------|
-| `AI-SUBSCRIPTION-AUDIT.md` | PAIOS session artifact |
-| `ARCHITECTURE-VALIDATION-PLAN.md` | Session artifact |
-| `ARCHITECTURE-VALIDATION-REPORT.md` | Session artifact |
-| `AUDIT-COMPLETE-SUMMARY.md` | Session artifact |
-| `CLAUDE-CLI-SPEED-ANALYSIS.md` | PAIOS-specific |
-| `CODEX-CLI-SUCCESS.md` | One-time setup confirmation |
-| `COMPLETE-LLM-INFRASTRUCTURE-ANALYSIS.md` | PAIOS-specific |
-| `COMPLETION-REPORT.md` | Session artifact |
-| `FINAL-SUBSCRIPTION-SUMMARY.md` | PAIOS-specific |
-| `GEMINI-API-SETUP.md` | PAIOS-specific |
-| `GEMINI-CONFIGURED-SUCCESS.md` | One-time setup confirmation |
-| `GEMINI-STATUS-REPORT.md` | PAIOS-specific |
-| `LLM-CAPABILITIES-AUDIT-PLAN.md` | Audit artifact |
-| `LLM-REFERENCE-GUIDE.md` | PAIOS-specific model reference |
-| `OPENAI-API-TEST-RESULTS.md` | PAIOS-specific |
-| `OPTIMIZED-API-ROUTING-IMPLEMENTATION.md` | PAIOS implementation notes |
-| `PHASE1-CLI-INVENTORY-RESULTS.md` | Inventory artifact |
+| File                                      | Reason                         |
+| ----------------------------------------- | ------------------------------ |
+| `AI-SUBSCRIPTION-AUDIT.md`                | PAIOS session artifact         |
+| `ARCHITECTURE-VALIDATION-PLAN.md`         | Session artifact               |
+| `ARCHITECTURE-VALIDATION-REPORT.md`       | Session artifact               |
+| `AUDIT-COMPLETE-SUMMARY.md`               | Session artifact               |
+| `CLAUDE-CLI-SPEED-ANALYSIS.md`            | PAIOS-specific                 |
+| `CODEX-CLI-SUCCESS.md`                    | One-time setup confirmation    |
+| `COMPLETE-LLM-INFRASTRUCTURE-ANALYSIS.md` | PAIOS-specific                 |
+| `COMPLETION-REPORT.md`                    | Session artifact               |
+| `FINAL-SUBSCRIPTION-SUMMARY.md`           | PAIOS-specific                 |
+| `GEMINI-API-SETUP.md`                     | PAIOS-specific                 |
+| `GEMINI-CONFIGURED-SUCCESS.md`            | One-time setup confirmation    |
+| `GEMINI-STATUS-REPORT.md`                 | PAIOS-specific                 |
+| `LLM-CAPABILITIES-AUDIT-PLAN.md`          | Audit artifact                 |
+| `LLM-REFERENCE-GUIDE.md`                  | PAIOS-specific model reference |
+| `OPENAI-API-TEST-RESULTS.md`              | PAIOS-specific                 |
+| `OPTIMIZED-API-ROUTING-IMPLEMENTATION.md` | PAIOS implementation notes     |
+| `PHASE1-CLI-INVENTORY-RESULTS.md`         | Inventory artifact             |
 
 ### Move (2 files)
 
-| File | Destination | Reason |
-|------|-------------|--------|
+| File                                    | Destination                                                   | Reason                                              |
+| --------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------- |
 | `INTELLIGENCE-EVOLUTION-MASTER-PLAN.md` | `docs/plans/2026-02-27-intelligence-evolution-master-plan.md` | Real plan doc, 2066 lines, deserves proper location |
-| `ROUTER-TROUBLESHOOTING.md` | `docs/reference/router-troubleshooting.md` | Legitimate ops reference |
+| `ROUTER-TROUBLESHOOTING.md`             | `docs/reference/router-troubleshooting.md`                    | Legitimate ops reference                            |
 
 ### Keep at root
 
@@ -59,20 +59,20 @@ All added in commit `68cbbfd0b` ("feat: add Claude configuration validator scrip
 
 ### Commit (7 files)
 
-| File | Reason |
-|------|--------|
-| `2026-02-28-paios-v4-design.md` | Completed milestone archive |
-| `2026-02-28-paios-v4-implementation.md` | Completed milestone archive |
-| `2026-02-28-paios-v4-intelligence-layer.md` | Completed milestone archive |
-| `2026-02-28-paios-kg-implementation-patterns.md` | Useful reference |
-| `2026-02-28-production-kg-architecture-research.md` | Useful reference |
-| `2026-03-01-claude-optimization-review.md` | Active concern |
-| `2026-03-01-claude-usage-limits-analysis.md` | Active concern |
+| File                                                | Reason                      |
+| --------------------------------------------------- | --------------------------- |
+| `2026-02-28-paios-v4-design.md`                     | Completed milestone archive |
+| `2026-02-28-paios-v4-implementation.md`             | Completed milestone archive |
+| `2026-02-28-paios-v4-intelligence-layer.md`         | Completed milestone archive |
+| `2026-02-28-paios-kg-implementation-patterns.md`    | Useful reference            |
+| `2026-02-28-production-kg-architecture-research.md` | Useful reference            |
+| `2026-03-01-claude-optimization-review.md`          | Active concern              |
+| `2026-03-01-claude-usage-limits-analysis.md`        | Active concern              |
 
 ### Delete (1 file)
 
-| File | Reason |
-|------|--------|
+| File                                 | Reason                                                |
+| ------------------------------------ | ----------------------------------------------------- |
 | `2026-02-28-graph-sync-hardening.md` | Kuzu-era plan, superseded by v4 Memgraph architecture |
 
 ---
@@ -95,12 +95,12 @@ Empty directory left behind after `382fe8009` removed google-antigravity provide
 
 ### Investigate and likely delete
 
-| File | Status |
-|------|--------|
-| `scripts/repro/tsx-name-repro.ts` | Bug repro — verify not referenced, then delete |
-| `scripts/zai-fallback-repro.ts` | Repro script — verify not referenced, then delete |
-| `scripts/firecrawl-compare.ts` | One-off comparison — verify then delete |
-| `scripts/readability-basic-compare.ts` | One-off comparison — verify then delete |
+| File                                   | Status                                            |
+| -------------------------------------- | ------------------------------------------------- |
+| `scripts/repro/tsx-name-repro.ts`      | Bug repro — verify not referenced, then delete    |
+| `scripts/zai-fallback-repro.ts`        | Repro script — verify not referenced, then delete |
+| `scripts/firecrawl-compare.ts`         | One-off comparison — verify then delete           |
+| `scripts/readability-basic-compare.ts` | One-off comparison — verify then delete           |
 
 These will be verified (checked for CI/workflow references) before deletion.
 

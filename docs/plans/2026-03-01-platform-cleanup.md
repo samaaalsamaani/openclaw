@@ -15,6 +15,7 @@
 These were accidentally committed in `68cbbfd0b` alongside a validator script. They are PAIOS session outputs with no relevance to the openclaw codebase. None are referenced anywhere in src/, CI, or scripts.
 
 **Files:**
+
 - Delete: `AI-SUBSCRIPTION-AUDIT.md`
 - Delete: `ARCHITECTURE-VALIDATION-PLAN.md`
 - Delete: `ARCHITECTURE-VALIDATION-REPORT.md`
@@ -72,6 +73,7 @@ Expected: Only `AGENTS.md`, `CHANGELOG.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `INT
 `INTELLIGENCE-EVOLUTION-MASTER-PLAN.md` is a real 2066-line planning doc — it belongs in `docs/plans/`. `ROUTER-TROUBLESHOOTING.md` is a useful ops reference — it belongs in `docs/reference/`.
 
 **Files:**
+
 - Move: `INTELLIGENCE-EVOLUTION-MASTER-PLAN.md` → `docs/plans/2026-02-27-intelligence-evolution-master-plan.md`
 - Move: `ROUTER-TROUBLESHOOTING.md` → `docs/reference/router-troubleshooting.md`
 
@@ -108,6 +110,7 @@ ROUTER-TROUBLESHOOTING.md to docs/reference/."
 These 8 files in `docs/plans/` were created during the Feb 28 sprint but never committed. 7 are worth keeping as archive/reference. 1 (`graph-sync-hardening.md`) is a Kuzu-era plan superseded by the v4 Memgraph architecture.
 
 **Files:**
+
 - Commit: `docs/plans/2026-02-28-paios-v4-design.md`
 - Commit: `docs/plans/2026-02-28-paios-v4-implementation.md`
 - Commit: `docs/plans/2026-02-28-paios-v4-intelligence-layer.md`
@@ -162,6 +165,7 @@ cleanup design. Drops graph-sync-hardening (superseded by v4 Memgraph)."
 The knowledge-base MCP server (`ai.openclaw.mcp-kb-server`) was decommissioned during PAIOS v4 cutover (Feb 28). The MCP daemon limitation (stdio protocol, no daemonize) was discovered in Phase 16 — the KB is now accessed directly via Memgraph. Lines 24-30 of `generate-mcp-plists.ts` reference a server that no longer exists.
 
 **Files:**
+
 - Modify: `scripts/generate-mcp-plists.ts:24-30`
 
 **Step 1: Remove the dead kb entry**
@@ -208,6 +212,7 @@ git add scripts/generate-mcp-plists.ts
 The `extensions/google-antigravity-auth/` directory was left empty after `382fe8009` removed google-antigravity provider support. It contains no tracked files.
 
 **Files:**
+
 - Delete: `extensions/google-antigravity-auth/` (directory)
 
 **Step 1: Confirm it's truly empty (no tracked files)**
@@ -238,12 +243,12 @@ Expected: No output.
 
 These scripts have no references in CI, package.json, or other scripts. They're repro/comparison one-offs from past investigations.
 
-| Script | What it was for |
-|--------|----------------|
-| `scripts/repro/tsx-name-repro.ts` | Bug repro for tsx naming issue |
-| `scripts/zai-fallback-repro.ts` | Fallback behavior repro |
-| `scripts/firecrawl-compare.ts` | One-off firecrawl vs. alternative comparison |
-| `scripts/readability-basic-compare.ts` | One-off readability lib comparison |
+| Script                                 | What it was for                              |
+| -------------------------------------- | -------------------------------------------- |
+| `scripts/repro/tsx-name-repro.ts`      | Bug repro for tsx naming issue               |
+| `scripts/zai-fallback-repro.ts`        | Fallback behavior repro                      |
+| `scripts/firecrawl-compare.ts`         | One-off firecrawl vs. alternative comparison |
+| `scripts/readability-basic-compare.ts` | One-off readability lib comparison           |
 
 **Step 1: Verify none are referenced (safety check)**
 

@@ -9,6 +9,7 @@
 **Tech Stack:** Python 3.14, Kuzu 0.11.3, `filelock` (pip), SQLite WAL mode, macOS launchd (existing).
 
 **Research basis:** 4 parallel web/GitHub research agents validated every assumption before this plan was written. Key findings that shaped this plan:
+
 - `buffer_pool_size=2GB` is NOT the SIGBUS safety mechanism — the real fix is `del db; gc.collect()` (QueryResult lifetime, Kuzu issue #5457)
 - Kuzu has a built-in `.lock` file but it has documented cross-process visibility issues — external `filelock` is required defense-in-depth
 - launchd `StartInterval` prevents the SAME job from concurrent runs, but `graph-sync-hot` and `daily-tasks` are different jobs and CAN overlap
@@ -26,6 +27,7 @@
 ### Task 1: Install filelock and create sync_context.py
 
 **Files:**
+
 - Create: `~/.openclaw/projects/graph/sync_context.py`
 
 **Background:** `filelock` is a Python library (pip install) that wraps OS file locking with correct fd lifecycle management. It prevents the double-open scenario where `graph-sync-hot` (15-min launchd) and `daily-tasks` (separate daily launchd job calling cold sync) overlap and both open write-mode `kuzu.Database` on the same path.
@@ -169,6 +171,7 @@ print('SyncContext OK')
 ```
 
 Expected:
+
 ```
 Write-mode events: 7797
 Read-only decisions: 2633
@@ -196,7 +199,8 @@ git commit -m "feat(graph): add SyncContext — filelock + kuzu lifecycle manage
 ### Task 2: Create sync_state.sqlite replacing sync_state.json
 
 **Files:**
-- Create: `~/.openclaw/projects/graph/sync_state_db.py`  ← state access module
+
+- Create: `~/.openclaw/projects/graph/sync_state_db.py` ← state access module
 - The migration from `sync_state.json` will happen in Task 3 when sync.py is refactored
 
 **Background:** `sync_state.json` has no concurrency protection and non-atomic writes. If the process is killed during `json.dump()` the file is partially written and the next run treats all tiers as "never synced" (full re-sync of 10K+ nodes). SQLite with WAL mode provides ACID writes, concurrent reads, and atomic upserts.
@@ -367,6 +371,7 @@ print('sync_state_db OK')
 ```
 
 Expected:
+
 ```
 ✅ Migrated sync_state.json → sync_state.sqlite   (first run only)
 Current state:
@@ -391,9 +396,11 @@ git commit -m "feat(graph): add sync_state.sqlite — atomic WAL-backed sync cur
 ### Task 3: Refactor sync.py — SyncContext + state DB + cold-tier event cap removal
 
 **Files:**
+
 - Modify: `~/.openclaw/projects/graph/sync.py`
 
 **What changes (all in one file):**
+
 1. Replace `kuzu.Database(...)` direct open in `sync_graph()` with `SyncContext`
 2. Replace `load_sync_state` / `save_sync_state` / `get_last_sync_timestamp` / `update_sync_timestamp` with `sync_state_db` imports
 3. Remove 90-day `event_lookback_days` cap from cold tier (set to `None` — same as decisions)
@@ -647,9 +654,11 @@ git commit -m "refactor(graph): sync.py uses SyncContext + sync_state.sqlite, re
 ### Task 4: Refactor sync_personal.py
 
 **Files:**
+
 - Modify: `~/.openclaw/projects/graph/enrich/sync_personal.py`
 
 **What changes:**
+
 1. `sync_signals()` — replace manual CHECK+CREATE with `MERGE`
 2. `sync_beliefs()` — replace manual CHECK+CREATE with `MERGE`, add `evidence_count` and `last_updated` fields
 3. Fix f-string SQL in `sync_life_scores()` — use parameterized query
@@ -660,11 +669,13 @@ Note: `sync_beliefs` is now called by `sync_graph()` hot tier (Task 3 already di
 **Step 1: Fix `sync_life_scores` f-string SQL injection (line ~60)**
 
 Replace:
+
 ```python
 result = conn.execute(f"MATCH (m:Moment {{date: date('{score_date}')}}) RETURN m.date")
 ```
 
 With:
+
 ```python
 result = conn.execute(
     "MATCH (m:Moment {date: $d}) RETURN m.date",
@@ -675,6 +686,7 @@ result = conn.execute(
 **Step 2: Replace KB SQLite open with WAL+busy_timeout in all three sync functions**
 
 Replace every `kb = sqlite3.connect(str(KB_DB_PATH))` with:
+
 ```python
 kb = sqlite3.connect(str(KB_DB_PATH))
 kb.execute("PRAGMA journal_mode=WAL")
@@ -850,6 +862,7 @@ git commit -m "fix(graph): sync_personal.py — MERGE for signals/beliefs, Belie
 ### Task 5: Fix sync_decisions_incremental — stale quality fields
 
 **Files:**
+
 - Modify: `~/.openclaw/projects/graph/sync.py` (lines ~385-403)
 
 **Background:** First sync sets `confidence`, `outcome_rating`, `chosen`, `rationale`. When a user rates a decision in KB, those values change. The graph never reflects the update because `ON MATCH SET` only updates session/embedding metadata.
@@ -911,25 +924,28 @@ git commit -m "fix(graph): sync_decisions ON MATCH SET updates quality fields (c
 ### Task 6: Fix hybrid_rag.py — read_only=True + destructor cleanup
 
 **Files:**
+
 - Modify: `~/.openclaw/projects/graph/hybrid_rag.py`
 
 **Background:** HybridRAG only reads from Kuzu. Opening in write mode holds a write lock unnecessarily and risks SIGSEGV if QueryResult objects outlive the Database destructor.
 
-**Step 1: Read the current __init__ and close() methods**
+**Step 1: Read the current **init** and close() methods**
 
 ```bash
 grep -n "kuzu\|graph_db\|graph_conn\|def close\|def __init__" ~/.openclaw/projects/graph/hybrid_rag.py | head -20
 ```
 
-**Step 2: Update __init__ to open read-only**
+**Step 2: Update **init** to open read-only**
 
 Replace:
+
 ```python
 self.graph_db   = kuzu.Database(str(GRAPH_DB_PATH))
 self.graph_conn = kuzu.Connection(self.graph_db)
 ```
 
 With:
+
 ```python
 import sys; sys.path.insert(0, str(Path.home() / '.openclaw/projects/graph'))
 from sync_context import BUFFER_POOL_SIZE
@@ -983,6 +999,7 @@ git commit -m "fix(graph): hybrid_rag.py opens Kuzu read_only=True with proper d
 ### Task 7: Fix causal_builder_safe.py — destructor cleanup
 
 **Files:**
+
 - Modify: `~/.openclaw/projects/graph/enrich/causal_builder_safe.py`
 - Delete: `~/.openclaw/projects/graph/enrich/causal_builder.py` (broken old version)
 
@@ -1088,11 +1105,13 @@ git commit -m "fix(graph): causal_builder_safe uses SyncContext; delete broken c
 ### Task 8: Fix schema.py main()
 
 **Files:**
+
 - Modify: `~/.openclaw/projects/graph/schema.py`
 
 **Step 1: Replace the broken `main()` function**
 
 Replace:
+
 ```python
 def main():
     db = kuzu.Database(str(GRAPH_DB_PATH))
@@ -1102,6 +1121,7 @@ def main():
 ```
 
 With:
+
 ```python
 def main():
     """
@@ -1137,17 +1157,20 @@ git commit -m "fix(graph): schema.py main() uses explicit buffer pool + proper c
 ### Task 9: Fix monitor.py edge type list
 
 **Files:**
+
 - Modify: `~/.openclaw/projects/graph/monitor.py`
 
 **Step 1: Replace the ghost edge types list (lines ~46-48)**
 
 Replace:
+
 ```python
 edge_types = ['happened_on', 'decided_on', 'caused_by', 'related_to',
               'extracted_from', 'led_to', 'challenged_by', 'confirmed_by']
 ```
 
 With the actual schema edge types:
+
 ```python
 edge_types = [
     'happened_on',   # Event → Moment
@@ -1190,6 +1213,7 @@ git commit -m "fix(graph): monitor.py edge type list matches actual schema (16 t
 ### Task 10: Add pre-cold-sync snapshot to daily-tasks.sh
 
 **Files:**
+
 - Modify: `~/.openclaw/projects/heartbeat-tasks/daily-tasks.sh`
 
 **Background:** Cold sync rewrites all decisions in-place. If corruption occurs mid-sync there is no recovery. A 43MB snapshot costs ~130MB to keep 3 days of history.
@@ -1252,6 +1276,7 @@ echo "Snapshot logic added"
 ### Task 11: Archive development artifacts from graph project directory
 
 **Files:**
+
 - `~/.openclaw/projects/graph/` — move test/result files to `archive/`
 
 **Step 1: Create archive directory and move artifacts**
@@ -1382,22 +1407,23 @@ git commit -m "chore(graph): post-hardening validation complete"
 
 ## Summary of Changes
 
-| File | Change type | Issue fixed |
-|------|-------------|-------------|
-| `sync_context.py` (NEW) | Create | C1: inter-process lock; C2/C3: destructor lifecycle |
-| `sync_state_db.py` (NEW) | Create | H5: atomic sync state; WAL-backed |
-| `sync.py` | Refactor | C1, H4 (90-day cap), H6 (beliefs in hot), M3 (utcnow), M4 (WAL) |
-| `enrich/sync_personal.py` | Refactor | H2 (MERGE), H3 (Belief fields), M2 (f-string SQL), M4 (WAL) |
-| `sync.py` (ON MATCH SET) | Patch | H1 (decision quality fields) |
-| `hybrid_rag.py` | Patch | C3 (read_only + cleanup) |
-| `enrich/causal_builder_safe.py` | Patch | C2 (destructor cleanup via SyncContext) |
-| `enrich/causal_builder.py` | Delete | L6 (remove broken old version) |
-| `schema.py` | Patch | L1 (main() buffer pool + cleanup) |
-| `monitor.py` | Patch | M1 (ghost edge types) |
-| `daily-tasks.sh` | Patch | M5 (pre-cold snapshot) |
-| `archive/` (25+ files) | Archive | L5 (dev artifact cleanup) |
+| File                            | Change type | Issue fixed                                                     |
+| ------------------------------- | ----------- | --------------------------------------------------------------- |
+| `sync_context.py` (NEW)         | Create      | C1: inter-process lock; C2/C3: destructor lifecycle             |
+| `sync_state_db.py` (NEW)        | Create      | H5: atomic sync state; WAL-backed                               |
+| `sync.py`                       | Refactor    | C1, H4 (90-day cap), H6 (beliefs in hot), M3 (utcnow), M4 (WAL) |
+| `enrich/sync_personal.py`       | Refactor    | H2 (MERGE), H3 (Belief fields), M2 (f-string SQL), M4 (WAL)     |
+| `sync.py` (ON MATCH SET)        | Patch       | H1 (decision quality fields)                                    |
+| `hybrid_rag.py`                 | Patch       | C3 (read_only + cleanup)                                        |
+| `enrich/causal_builder_safe.py` | Patch       | C2 (destructor cleanup via SyncContext)                         |
+| `enrich/causal_builder.py`      | Delete      | L6 (remove broken old version)                                  |
+| `schema.py`                     | Patch       | L1 (main() buffer pool + cleanup)                               |
+| `monitor.py`                    | Patch       | M1 (ghost edge types)                                           |
+| `daily-tasks.sh`                | Patch       | M5 (pre-cold snapshot)                                          |
+| `archive/` (25+ files)          | Archive     | L5 (dev artifact cleanup)                                       |
 
 **Risks eliminated:**
+
 - Inter-process double-open (CRITICAL — was the original corruption vector)
 - QueryResult use-after-free SIGSEGV on any DB-opening script
 - Belief + Signal data corruption on retry

@@ -16,7 +16,7 @@ PAIOS v4 inverts this. The temporal knowledge graph is the **primary artifact** 
 **Three capabilities this unlocks that don't exist today:**
 
 1. **Compounding intelligence** — every conversation, decision, and observation permanently enriches the model. The system gets measurably smarter with every use.
-2. **Temporal reasoning** — the system knows not just what is true, but what *was* true at any point in time, and how beliefs evolved. It can answer: "What did I think about X on February 1st, and what changed?"
+2. **Temporal reasoning** — the system knows not just what is true, but what _was_ true at any point in time, and how beliefs evolved. It can answer: "What did I think about X on February 1st, and what changed?"
 3. **Proactive intelligence** — because the model is always current (sub-200ms from any source), the system can surface patterns and contradictions without being asked.
 
 ---
@@ -26,6 +26,7 @@ PAIOS v4 inverts this. The temporal knowledge graph is the **primary artifact** 
 Downtime is acceptable. The system has no production users. This unlocks the correct engineering decision: **delete the old architecture and build the right one**.
 
 What gets deleted:
+
 - `~/.openclaw/graph.kuzu` — the corrupted, archived-DB graph
 - `sync.py` and all polling tier code — replaced by CDC
 - `sync_context.py` — replaced by Graphiti's lifecycle management
@@ -36,6 +37,7 @@ What gets deleted:
 - All launchd plists for graph sync — replaced by new plists
 
 What stays (untouched):
+
 - The 5 SQLite source databases — they are the truth, never touched
 - `~/.openclaw/agents/` and gateway infrastructure
 - Claude Code hooks infrastructure
@@ -53,17 +55,20 @@ What stays (untouched):
 Research validated against: FalkorDB, TigerGraph, ArangoDB, Weaviate, Cozo, Kuzu/Ladybug, Neo4j Enterprise.
 
 **Atomic GraphRAG (Memgraph 3.8)** — the decisive advantage:
+
 - Your entire RAG retrieval pipeline (vector search → graph traversal → ranking) executes as a **single Cypher query** inside the database with full ACID guarantees
 - Replaces 5-7 sequential Python steps with one round-trip
 - Returns not just context but which nodes/edges were selected — observable, debuggable
 - ~10x less retrieval code vs. current manual pipeline
 
 **Single-store vector index:**
+
 - Vectors live in the graph, not in a separate system
 - Combined graph+vector queries in one atomic operation — you get relationship context AND semantic similarity together, which Qdrant/separate vector stores cannot do
 - Research confirmed: for graph-centric queries (your use case), this beats dedicated vector DBs
 
 **Performance and compatibility:**
+
 - 8x faster reads, 50x faster writes vs. Neo4j (irrelevant at 100K nodes, but correct architecture for scale)
 - Cypher + Bolt protocol — same connection string as Neo4j (`bolt://localhost:7687`)
 - Graphiti compatibility: uses bolt:// driver, Memgraph is drop-in compatible (validate in Phase 0)
@@ -71,6 +76,7 @@ Research validated against: FalkorDB, TigerGraph, ArangoDB, Weaviate, Cozo, Kuzu
 - Free Community Edition — same licensing model as Neo4j Community
 
 **Durability (in-memory ≠ volatile):**
+
 - WAL (Write-Ahead Logging) enabled by default — every write persisted to disk before acknowledged
 - Periodic snapshots configurable (`--storage-snapshot-interval`)
 - Snapshot-on-exit: `--storage-snapshot-on-exit=true`
@@ -78,6 +84,7 @@ Research validated against: FalkorDB, TigerGraph, ArangoDB, Weaviate, Cozo, Kuzu
 - At 100K nodes: ~500MB-1GB RAM footprint — well within Mac specs
 
 **Deployment:**
+
 ```
 Service:   bolt://localhost:7687
 Auth:      memgraph / [local password]
@@ -91,6 +98,7 @@ Install:   docker pull memgraph/memgraph-platform OR brew (ARM64 binary)
 Before committing to Memgraph, run Graphiti's test suite against bolt://localhost:7687 (Memgraph). If all Graphiti operations pass → proceed. If edge cases → fall back to Neo4j Community. Timeline: 1-2 days. Either path preserves the entire remaining plan unchanged.
 
 **What was ruled out and why:**
+
 - **Neo4j**: Valid fallback if Graphiti compatibility fails. No Atomic GraphRAG. JVM overhead.
 - **FalkorDB**: Graphiti support experimental. Redis-based architecture adds complexity.
 - **ArangoDB**: Single-stack appeal but temporal model is audit-based, not bi-temporal. Loses Graphiti's conflict resolution.
@@ -102,6 +110,7 @@ Before committing to Memgraph, run Graphiti's test suite against bolt://localhos
 ### 3.2 Temporal Memory API: Graphiti (graphiti-core)
 
 **What Graphiti provides out of the box:**
+
 - Bi-temporal model: `valid_at` (when true in reality) + `created_at` (when system learned it)
 - Edge invalidation: contradicted facts are marked expired, never deleted
 - LLM-based entity and relationship extraction from unstructured text
@@ -110,6 +119,7 @@ Before committing to Memgraph, run Graphiti's test suite against bolt://localhos
 - Hybrid search: semantic (vector) + keyword (fulltext) + graph traversal
 
 **What we add on top of Graphiti:**
+
 - Structured ingestion path (for SQLite CDC data — no LLM extraction needed)
 - Custom node types (Signal, Lesson, Moment, Artifact) beyond Graphiti's defaults
 - Proactive surfacing layer (pattern detection that generates Signals)
@@ -120,6 +130,7 @@ Before committing to Memgraph, run Graphiti's test suite against bolt://localhos
 Graphiti uses an LLM to extract entities and relationships from every episode. This is powerful for conversations but prohibitively expensive for bulk structured data.
 
 **Path A — Semantic (Graphiti native):**
+
 ```
 Source: Conversations, decisions (text-rich, semantic meaning matters)
 Method: graphiti.add_episode(episode_body=text, ...)
@@ -129,6 +140,7 @@ Result: Rich entity extraction, relationship inference, conflict detection
 ```
 
 **Path B — Structured (Direct Neo4j writes):**
+
 ```
 Source: SQLite CDC events, observability, social posts (structured columns)
 Method: neo4j_driver.execute_query("MERGE (e:Event {...})")
@@ -150,6 +162,7 @@ OPTIONS {size: 1536, similarity_metric: 'cos', resize_coefficient: 2}
 
 **Why single-store beats a dedicated vector DB for this use case:**
 Combined graph+vector Atomic GraphRAG query (impossible with split storage):
+
 ```cypher
 CALL vector_search.search('Belief', 5, $query_embedding) YIELD node, score
 MATCH (node)-[:SUPPORTS]->(d:Decision)
@@ -169,6 +182,7 @@ Every node and relationship carries temporal metadata. This is not optional — 
 ### 4.1 Universal Temporal Fields
 
 **All nodes:**
+
 ```
 valid_at:      DateTime   -- when this fact became true in reality
 expired_at:    DateTime?  -- when it stopped being true (null = currently active)
@@ -179,6 +193,7 @@ agent_id:      String     -- which AI brain or officer wrote it
 ```
 
 **All relationships (edges):**
+
 ```
 valid_at:      DateTime   -- same meaning as nodes
 expired_at:    DateTime?  -- edge invalidation (never delete, mark expired)
@@ -275,11 +290,13 @@ await session.run("""
 ```
 
 **Query for current beliefs only:**
+
 ```cypher
 MATCH (b:Belief) WHERE b.expired_at IS NULL RETURN b
 ```
 
 **Query for beliefs as of a specific date:**
+
 ```cypher
 MATCH (b:Belief)
 WHERE b.valid_at <= $date AND (b.expired_at IS NULL OR b.expired_at > $date)
@@ -338,11 +355,13 @@ Loop every 100ms:
 ```
 
 High-value tables with triggers (Phase 1):
+
 - `observability.sqlite`: `events`
 - `kb.sqlite`: `decisions`, `officer_signals`, `thinking_beliefs`, `life_scores`
 - `social-history.sqlite`: `posts`, `post_metrics`
 
 Lower-value tables (Phase 2, add triggers later):
+
 - `ceo.sqlite`: `relationships`, `habits`
 - `autonomy.sqlite`: `action_rules`, `approval_log`
 
@@ -382,6 +401,7 @@ MAPPINGS = {
 ### 6.1 What It Does
 
 After every AI conversation ends — regardless of which brain handled it — a lightweight pass extracts:
+
 - Beliefs expressed or updated ("I think X", "I now believe Y")
 - Decisions made or discussed
 - Entities mentioned (people, projects, tools, concepts)
@@ -397,6 +417,7 @@ All extracted content is passed to `graphiti.add_episode()`. Graphiti's LLM extr
 Uses Claude Code's `PostToolUse` or session-end hook mechanism. The hook fires when a session ends, receives the full conversation history, and calls the mining endpoint.
 
 Hook configuration at `~/.claude/settings.json`:
+
 ```json
 {
   "hooks": {
@@ -463,6 +484,7 @@ This is the compounding effect. It requires no additional engineering after the 
 Before any AI interaction begins — in Claude Code or via the gateway — the system queries the temporal graph for context relevant to the current conversation. This context is injected into the system prompt.
 
 The AI always has:
+
 - Your current active beliefs relevant to the topic
 - Recent decisions in this domain and their outcomes
 - Lessons that apply to the current situation
@@ -526,6 +548,7 @@ The learning loop is open. Nothing feeds back.
 ### 8.2 Closing the Loop
 
 **New node type: Outcome**
+
 ```cypher
 (:Outcome {
     outcome_id: String,
@@ -539,6 +562,7 @@ The learning loop is open. Nothing feeds back.
 ```
 
 **New relationships:**
+
 ```cypher
 (Decision)-[:RESULTED_IN]->(Outcome)
 (Outcome)-[:GENERATED]->(Lesson)  -- when pattern is detected
@@ -547,6 +571,7 @@ The learning loop is open. Nothing feeds back.
 
 **Automatic outcome detection:**
 A weekly analytics pass (integrated into `weekly-tasks.sh`) queries for:
+
 - Decisions made >30 days ago with no linked Outcome
 - Conversations mentioning those decisions
 - Any signal that the outcome has been observed
@@ -554,6 +579,7 @@ A weekly analytics pass (integrated into `weekly-tasks.sh`) queries for:
 When a decision has a clear outcome, link them and check if a Lesson should be created.
 
 **Lesson confidence decay:**
+
 ```python
 # Weekly: decay lesson confidence if not applied recently
 def decay_lessons():
@@ -619,6 +645,7 @@ Patterns become **officer Signals** that appear in your morning briefing, Claude
 ### Phase 0: Stabilize Current System (Week 1, Days 1-3)
 
 Execute the minimum subset of the Phase 1 hardening plan needed to keep the system running during the transition:
+
 - Fix `conversation_embedding` typo in sync.py (prevents decision sync crash)
 - Keep hot sync running for observability (the existing graph is used until Phase 1 completes)
 - Do NOT invest in SyncContext, sync_state.sqlite, or other Kuzu improvements — these will be deleted
@@ -664,32 +691,35 @@ End state: Kuzu is gone. Neo4j + Graphiti + CDC is the live system.
 
 ## 11. Risk Register
 
-| Risk | Probability | Impact | Mitigation |
-|------|------------|--------|------------|
-| Graphiti LLM extraction quality poor | Medium | Medium | Test with 20 conversations before deploying to all. Fine-tune extraction prompt. |
-| Neo4j JVM too slow on older hardware | Low | Medium | Has 16GB+ RAM Mac. JVM overhead ~512MB. Acceptable. |
-| CDC triggers slow down SQLite writes | Low | Low | +100% write overhead measured in practice at ~2ms. KB gets ~10 writes/hour. Imperceptible. |
-| Graphiti API changes break mining | Low | Medium | Pin graphiti-core version. Monitor GitHub. We can fork if needed (~3K lines). |
-| Neo4j data corruption | Very Low | High | Daily backup via `neo4j-admin dump`. 3-day retention. Automated via daily-tasks.sh. |
-| Mining produces noisy/wrong entities | Medium | Low | Graphiti has conflict resolution. Wrong entities expire naturally. Human review via weekly briefing. |
-| Kuzu-era data loss during cutover | None | High | All data rebuilt from SQLite source DBs. The graph is always derived, never primary. |
+| Risk                                 | Probability | Impact | Mitigation                                                                                           |
+| ------------------------------------ | ----------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| Graphiti LLM extraction quality poor | Medium      | Medium | Test with 20 conversations before deploying to all. Fine-tune extraction prompt.                     |
+| Neo4j JVM too slow on older hardware | Low         | Medium | Has 16GB+ RAM Mac. JVM overhead ~512MB. Acceptable.                                                  |
+| CDC triggers slow down SQLite writes | Low         | Low    | +100% write overhead measured in practice at ~2ms. KB gets ~10 writes/hour. Imperceptible.           |
+| Graphiti API changes break mining    | Low         | Medium | Pin graphiti-core version. Monitor GitHub. We can fork if needed (~3K lines).                        |
+| Neo4j data corruption                | Very Low    | High   | Daily backup via `neo4j-admin dump`. 3-day retention. Automated via daily-tasks.sh.                  |
+| Mining produces noisy/wrong entities | Medium      | Low    | Graphiti has conflict resolution. Wrong entities expire naturally. Human review via weekly briefing. |
+| Kuzu-era data loss during cutover    | None        | High   | All data rebuilt from SQLite source DBs. The graph is always derived, never primary.                 |
 
 ---
 
 ## 12. Success Metrics
 
 **Week 3 (post-cutover):**
+
 - CDC latency: p95 < 200ms from SQLite write to Neo4j node
 - Conversation mining: 100% of Claude Code sessions mined
 - Context injection: active in all gateway interactions
 - Data completeness: all 7.8K events, 2.6K decisions, 50+ beliefs in Neo4j
 
 **Month 2:**
+
 - 500+ conversation episodes mined and stored
 - Active beliefs: 100+ (growing organically from conversations)
 - Learning loop: at least 10 Decision → Outcome → Lesson chains closed
 
 **Month 3:**
+
 - Proactive surfacing: at least 3 genuine patterns surfaced that would not have been noticed manually
 - One instance of: "system surfaced a belief contradiction before a decision was finalized"
 - Intelligence compounds: the system is measurably smarter than month 1 with zero manual curation

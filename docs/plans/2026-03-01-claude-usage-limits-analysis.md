@@ -16,17 +16,18 @@ Anthropic's Max plan uses a **5-hour rolling window**, not a 24-hour bucket. The
 
 ### Daily Usage
 
-| Date | Sessions | API Requests | Cache Reads | Peak Concurrent |
-|---|---|---|---|---|
-| Feb 22 | 2 | 316 | 20M | ~1 |
-| Feb 23 | 12 | 2,420 | 226M | ~2 |
-| Feb 24 | 26 | 4,606 | 452M | ~3 |
-| Feb 25 | 24 | 3,149 | 318M | ~3 |
-| **Feb 26** | **323** | **5,237** | **464M** | **24 🔴** |
-| Feb 27 | 36 | 4,884 | 638M | 6 |
-| Feb 28 | 7 | 2,602 | 671M | ~2 |
+| Date       | Sessions | API Requests | Cache Reads | Peak Concurrent |
+| ---------- | -------- | ------------ | ----------- | --------------- |
+| Feb 22     | 2        | 316          | 20M         | ~1              |
+| Feb 23     | 12       | 2,420        | 226M        | ~2              |
+| Feb 24     | 26       | 4,606        | 452M        | ~3              |
+| Feb 25     | 24       | 3,149        | 318M        | ~3              |
+| **Feb 26** | **323**  | **5,237**    | **464M**    | **24 🔴**       |
+| Feb 27     | 36       | 4,884        | 638M        | 6               |
+| Feb 28     | 7        | 2,602        | 671M        | ~2              |
 
 **Totals across 8 days:**
+
 - 23,250 API requests
 - 2.79 billion cache read tokens
 - 552K actual input tokens (cache reads are 5,000× larger)
@@ -43,6 +44,7 @@ claude-haiku-4-5:           318 requests   (1%)
 ### Session Startup Cost
 
 Every new session pays a fixed overhead on the first API request:
+
 - Cache creation (first time): avg **15,413 tokens**
 - Cache read (warm starts): avg **43,764 tokens**
 - Combined startup tax: **~59K tokens per session**
