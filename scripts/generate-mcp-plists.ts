@@ -22,13 +22,6 @@ interface McpServerConfig {
 
 const mcpServers: McpServerConfig[] = [
   {
-    name: "kb",
-    label: "ai.openclaw.mcp-kb-server",
-    serverPath: path.join(HOME, ".openclaw", "projects", "knowledge-base", "mcp-server.js"),
-    workingDirectory: path.join(HOME, ".openclaw", "projects", "knowledge-base"),
-    port: 3001,
-  },
-  {
     name: "observability",
     label: "ai.openclaw.mcp-observability-server",
     serverPath: path.join(HOME, ".openclaw", "projects", "observability", "mcp-server.js"),
