@@ -47,3 +47,58 @@ if [ "${#format_files[@]}" -gt 0 ]; then
 fi
 
 git add -- "${files[@]}"
+
+# --- Root file allowlist (FAIL if unexpected root-level file staged) ---
+_ROOT_ALLOWED=(
+  AGENTS.md CHANGELOG.md CLAUDE.md CONTRIBUTING.md LICENSE PATCHES.md
+  README.md SECURITY.md VISION.md setup-podman.sh docs.acp.md
+  package.json pnpm-lock.yaml pnpm-workspace.yaml
+  tsconfig.json tsconfig.plugin-sdk.dts.json tsdown.config.ts
+  vitest.config.ts vitest.e2e.config.ts vitest.extensions.config.ts
+  vitest.gateway.config.ts vitest.live.config.ts vitest.unit.config.ts
+  zizmor.yml appcast.xml render.yaml fly.toml fly.private.toml
+  docker-compose.yml docker-setup.sh pyproject.toml openclaw.mjs openclaw.podman.env
+  Dockerfile Dockerfile.sandbox Dockerfile.sandbox-browser Dockerfile.sandbox-common
+  knip.json
+)
+
+_root_bad=()
+for _f in "${files[@]}"; do
+  # Root-level file: no slash, not a dotfile
+  if [[ "$_f" != */* && "$_f" != .* ]]; then
+    _in_list=0
+    for _a in "${_ROOT_ALLOWED[@]}"; do
+      [[ "$_a" == "$_f" ]] && _in_list=1 && break
+    done
+    [[ $_in_list -eq 0 ]] && _root_bad+=("$_f")
+  fi
+done
+
+if [[ ${#_root_bad[@]} -gt 0 ]]; then
+  echo "" >&2
+  echo "❌ Root file allowlist violation — these files are not allowed at repo root:" >&2
+  for _f in "${_root_bad[@]}"; do echo "   $_f" >&2; done
+  echo "" >&2
+  echo "Move docs to docs/plans/ or docs/reference/." >&2
+  echo "To add a file to the allowlist, edit git-hooks/pre-commit (_ROOT_ALLOWED)" >&2
+  echo "and scripts/housekeeping-audit.sh (ALLOWED) together." >&2
+  exit 1
+fi
+
+# --- Stale untracked docs/plans/ (WARN, non-blocking) ---
+if command -v stat >/dev/null 2>&1; then
+  _stale_warn=()
+  while IFS= read -r _uf; do
+    [[ -z "$_uf" ]] && continue
+    _mtime=$(stat -f %m "$ROOT_DIR/$_uf" 2>/dev/null || stat -c %Y "$ROOT_DIR/$_uf" 2>/dev/null || echo 0)
+    _age=$(( ( $(date +%s) - _mtime ) / 86400 ))
+    [[ $_age -gt 2 ]] && _stale_warn+=("$_uf (${_age}d)")
+  done < <(git ls-files --others --exclude-standard docs/plans/ 2>/dev/null)
+  if [[ ${#_stale_warn[@]} -gt 0 ]]; then
+    echo "" >&2
+    echo "⚠ Untracked docs/plans/ files older than 2 days:" >&2
+    for _uf in "${_stale_warn[@]}"; do echo "   $_uf" >&2; done
+    echo "  → Commit them or delete them before they accumulate." >&2
+    echo "" >&2
+  fi
+fi
