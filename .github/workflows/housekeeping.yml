@@ -1,0 +1,142 @@
+name: Housekeeping
+
+on:
+  schedule:
+    - cron: "0 9 1-7 * 1" # Monthly: first Monday, 09:00 UTC
+    - cron: "0 22 * * 0" # Weekly:  every Sunday, 22:00 UTC
+  workflow_dispatch:
+    inputs:
+      check:
+        description: "Which check to run"
+        required: false
+        default: "all"
+        type: choice
+        options: [all, audit, branches]
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Monthly housekeeping audit ──────────────────────────────────────────
+  audit:
+    name: Housekeeping audit
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.schedule == '0 9 1-7 * 1'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run audit
+        id: audit
+        run: |
+          chmod +x scripts/housekeeping-audit.sh
+          set +e
+          output=$(bash scripts/housekeeping-audit.sh 2>&1)
+          exit_code=$?
+          set -e
+          {
+            echo "output<<AUDIT_EOF"
+            echo "$output"
+            echo "AUDIT_EOF"
+            echo "exit_code=$exit_code"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Open issue if issues found
+        if: steps.audit.outputs.exit_code != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().slice(0, 10);
+            const output = `${{ steps.audit.outputs.output }}`;
+            const count = (output.match(/⚠/g) || []).length;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `chore: monthly housekeeping audit — ${date} (${count} issues)`,
+              body: [
+                '## Housekeeping Audit Report',
+                '',
+                '```',
+                output,
+                '```',
+                '',
+                'Run `bash scripts/housekeeping-audit.sh` locally to reproduce.',
+                'Update `docs/reference/housekeeping-log.md` when resolved.',
+              ].join('\n'),
+              labels: ['housekeeping'],
+            });
+
+      - name: Log clean run
+        if: steps.audit.outputs.exit_code == '0'
+        run: echo "✓ Audit clean — no issue opened."
+
+  # ── Weekly stale branch report ──────────────────────────────────────────
+  stale-branches:
+    name: Stale branch report
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.schedule == '0 22 * * 0'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find stale branches
+        id: branches
+        run: |
+          CUTOFF=$(date -d "30 days ago" --iso-8601 2>/dev/null \
+            || date -v-30d +%Y-%m-%d 2>/dev/null \
+            || echo "1970-01-01")
+          STALE=""
+          while IFS= read -r branch; do
+            branch=$(echo "$branch" | sed 's|origin/||' | xargs)
+            case "$branch" in main|beta|dev|HEAD|"") continue ;; esac
+            last=$(git log -1 --format="%ci" "origin/$branch" 2>/dev/null | cut -c1-10 || true)
+            [[ -z "$last" ]] && continue
+            [[ "$last" < "$CUTOFF" ]] && STALE="$STALE $branch"
+          done < <(git branch -r --merged origin/main 2>/dev/null | grep -v HEAD || true)
+          STALE="${STALE# }"
+          echo "stale=$STALE" >> "$GITHUB_OUTPUT"
+          echo "count=$(echo "$STALE" | wc -w | xargs)" >> "$GITHUB_OUTPUT"
+
+      - name: Open issue if stale branches found
+        if: steps.branches.outputs.stale != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branches = `${{ steps.branches.outputs.stale }}`.trim().split(/\s+/).filter(Boolean);
+            const date = new Date().toISOString().slice(0, 10);
+            const body = [
+              '## Stale Merged Branches',
+              '',
+              'These branches are merged to `main` and older than 30 days:',
+              '',
+              ...branches.map(b => `- \`${b}\``),
+              '',
+              'To delete them all (review first):',
+              '```bash',
+              `git push origin --delete \\`,
+              ...branches.map((b, i) => `  ${b}${i < branches.length - 1 ? ' \\' : ''}`),
+              '```',
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `chore: stale branch cleanup — ${date} (${branches.length} branches)`,
+              body,
+              labels: ['housekeeping'],
+            });
+
+      - name: Log clean run
+        if: steps.branches.outputs.stale == ''
+        run: echo "✓ No stale branches — no issue opened."
