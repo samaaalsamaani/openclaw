@@ -55,13 +55,23 @@
 - Vitest, V8 coverage (70% threshold). Match source names with `*.test.ts`; e2e: `*.e2e.test.ts`.
 - Do not set test workers above 16. Changelog: user-facing changes only.
 - Mobile: prefer connected real devices over simulators. Full kit: `docs/testing.md`.
+- Run `pnpm knip` before PRs that remove or rename significant exports.
 
 ## Commit & Pull Request Guidelines
 
 - Full maintainer PR workflow: see `.agents/skills/PR_WORKFLOW.md`.
 - Commits: `scripts/committer "<msg>" <file...>`. Concise, action-oriented messages.
 - Group related changes; avoid bundling unrelated refactors.
+- Before committing a root-level `.md`, verify it's in the root allowlist (pre-commit hook enforces this; `scripts/housekeeping-audit.sh` [1/6] also checks).
 - PR template: `.github/pull_request_template.md`. Issue templates: `.github/ISSUE_TEMPLATE/`.
+
+## Feature Removal
+
+When removing any feature, provider, or extension:
+
+1. Run `scripts/feature-removal-checklist.sh <name>` — fix all issues it reports.
+2. Add a row to `docs/reference/tombstones.md` with grep patterns.
+3. For extensions, follow `docs/reference/extension-lifecycle.md` checklist.
 
 ## Shorthand Commands
 
