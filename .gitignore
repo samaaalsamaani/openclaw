@@ -115,3 +115,13 @@ dist/protocol.schema.json
 # Synthing
 **/.stfolder/
 .worktrees/
+
+# PAIOS session artifacts — these filename patterns should never live at repo root
+# They indicate an AI planning session output was accidentally staged.
+/*-CONFIGURED-SUCCESS.md
+/*-API-TEST-RESULTS.md
+/*-STATUS-REPORT.md
+/*-SUBSCRIPTION-AUDIT.md
+/*-COMPLETION-REPORT.md
+/*-INFRASTRUCTURE-ANALYSIS.md
+/*-CAPABILITIES-AUDIT-PLAN.md
