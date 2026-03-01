@@ -1,171 +1,69 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: System Reliability & Hardening
-status: unknown
-last_updated: "2026-02-28T05:53:07.435Z"
+milestone: v4.0
+milestone_name: TBD
+status: planning
+last_updated: "2026-03-01T06:45:06.337Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 13
-  completed_plans: 13
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-27)
+See: .planning/PROJECT.md (updated 2026-03-01)
 
 **Core value:** Three AI brains, one protocol (MCP), shared memory (KB), unified routing — so the right brain handles every task automatically, and knowledge compounds across all interactions.
 
-**Current focus:** v3.0 System Reliability & Hardening — stabilization milestone
+**Current focus:** v4.0 — planning next milestone
 
 ## Current Position
 
-Phase: 19 of 21 (Monitoring & Alerting)
-Plan: 2 of 3 complete (19-02-PLAN.md)
-Status: In Progress
-Last activity: 2026-02-28 — Completed automated alerting system with notifications
+Milestone v3.0 shipped 2026-03-01. Ready to plan v4.0.
 
-Progress: [███████████████░] 76% (16 of 21 phases complete)
+Run `/gsd:new-milestone` to define requirements and roadmap.
 
-## Performance Metrics
+## Prior Milestone Velocity
 
-**Velocity:**
-
-- Total plans completed: 47 (Phases 1-15)
-- Total execution time: v1.0 + v2.0 shipped 2026-02-22
-
-**By Milestone:**
-
-| Milestone | Phases | Plans | Status   |
-| --------- | ------ | ----- | -------- |
-| v1.0      | 1-9    | 29    | Complete |
-| v2.0      | 10-15  | 17    | Complete |
-| v3.0      | 16-21  | TBD   | Planning |
-
-**Current Milestone Focus:**
-
-v3.0 is NOT feature-building — pure stabilization:
-
-- Fix service crashes and hangs
-- Eliminate integration failures
-- Prevent config corruption
-- Add monitoring and alerting
-- Document recovery procedures
-- Make changes safe
-
-**Phase 16 Performance:**
-
-| Plan | Tasks | Files | Duration |
-| ---- | ----- | ----- | -------- |
-| P00  | 3     | 5     | -        |
-| P01  | 3     | 8     | 572s     |
-| P02  | 3     | 6     | 472s     |
-| P03  | 4     | 19    | 317s     |
-
-**Phase 17 Performance:**
-
-| Plan | Tasks | Files | Duration |
-| ---- | ----- | ----- | -------- |
-| P01  | 3     | 5     | 1119s    |
-| P03  | 3     | 5     | 259s     |
-| P02  | 3     | 6     | 502s     |
-
-**Phase 18 Performance:**
-
-| Plan | Tasks | Files | Duration |
-| ---- | ----- | ----- | -------- |
-| P01  | 3     | 7     | TBD      |
-| P02  | 3     | 6     | 585s     |
-| P03  | 3     | 2     | 272s     |
-
-**Phase 19 Performance:**
-
-| Plan         | Tasks | Files   | Duration |
-| ------------ | ----- | ------- | -------- |
-| P01          | 3     | 3       | 731s     |
-| P02          | 3     | 4       | 219s     |
-| Phase 19 P03 | 28696 | 3 tasks | 3 files  |
+| Milestone | Phases | Plans | Shipped    |
+| --------- | ------ | ----- | ---------- |
+| v1.0      | 1-9    | 29    | 2026-02-22 |
+| v2.0      | 10-15  | 17    | 2026-02-22 |
+| v3.0      | 16-21  | 13    | 2026-03-01 |
 
 ## Accumulated Context
 
-### Decisions
+### Key Decisions for Next Milestone
 
-Recent decisions from PROJECT.md:
+- Non-singleton database pattern (callers manage connection lifecycle)
+- Permanent errors fail fast (400/401/404); transient errors retry with exponential backoff
+- Session-scoped MCP servers (TCP wrapper needed for true daemon architecture)
+- Cap agent team waves to 4-5 max (Claude Max rate limits hit with 24 concurrent sessions)
+- better-sqlite3 must be external in tsdown.config.ts (native module cannot be bundled)
+- Alert channels: NOTIFICATION + LOG + OBSERVABILITY (three channels, routing per environment)
 
-- **Stabilization milestone (v3.0)**: Freeze new features, fix everything before building more. All 15 v1/v2 phases shipped but system unstable. Do it right.
-- [Phase 16]: Test scaffolds before implementation enforces testability
-- [Phase 16]: Todo markers document contract without false passes
-- [Phase 16]: Separate MCP test file isolates error boundary testing
-- [Phase 16 P01]: Use better-sqlite3 singleton pattern for crash logger (keep connection open for fast writes)
-- [Phase 16 P01]: Install exit handler on module load (ensures crash logging even in unexpected exits)
-- [Phase 16 P01]: Error boundaries return isError=true instead of throwing (MCP clients can handle gracefully)
-- [Phase 16 P01]: Track timers in module-level Set (enables validation that all resources are cleaned up)
-- [Phase 16 P02]: 60-second monitoring interval balances detection speed vs GC noise
-- [Phase 16 P02]: 12-minute rolling window smooths GC spikes while catching real leaks
-- [Phase 16 P02]: 10MB/hour threshold catches significant leaks without false positives
-- [Phase 16 P02]: 5-failure circuit breaker threshold follows industry standard
-- [Phase 16 P02]: 1000-request worker recycling prevents ML model memory leaks
-- [Phase 16 P03]: KeepAlive with SuccessfulExit=false restarts on crash only (not clean exit)
-- [Phase 16 P03]: ThrottleInterval=10 seconds minimum between restarts (launchd minimum)
-- [Phase 16 P03]: ExitTimeOut=30 seconds for graceful shutdown before SIGKILL
-- [Phase 16 P03]: ProcessType=Background prevents blocking interactive tasks
-- [Phase 16 P03]: MCP stdio protocol incompatible with daemon architecture - requires TCP wrapper
-- [Phase 16 P03]: Session-scoped MCP servers with cleanup script is correct pattern
-- [Phase 17 P01]: Retry classification based on error type — Permanent errors (400, 401, 404) fail immediately, transient errors (ETIMEDOUT, 503, 504) use exponential backoff
-- [Phase 17 P01]: Skip observability logging in tests without better-sqlite3 — Graceful degradation when native bindings unavailable in test environment
-- [Phase 17]: Hook error boundaries wrap all handlers in try/catch, log to observability.sqlite, never throw to prevent Gateway crashes
-- [Phase 17]: MCP tools layered as withErrorBoundary → retryWithBackoff → callWithTimeout → operation for defense in depth
-- [Phase 17]: All KB tools share mcp-kb-server circuit breaker (fail together if KB unavailable)
-- [Phase 17]: Plugin hook system already has error boundaries via catchErrors: true (Phase 16), new hook-executor adds observability logging layer
-- [Phase 17-integration-reliability]: [Phase 17 P02]: Temp file manager with 10KB threshold for ARG_MAX mitigation
-- [Phase 17-integration-reliability]: [Phase 17 P02]: SDK doesn't support file-based prompts - temp file wrapper not applicable
-- [Phase 17-integration-reliability]: [Phase 17 P02]: Timeouts are permanent failures, not retryable (operation exceeded limit and was killed)
-- [Phase 18]: Non-singleton database pattern lets callers manage connection lifecycle (different services need different lifetimes)
-- [Phase 18]: Graceful WAL degradation - logs warning but doesn't crash if WAL fails (optimization, not requirement)
-- [Phase 18]: Strict mode on LlmConfigSchema and AuthProfilesSchema to catch typos, passthrough on OpenClawConfigSchema (100+ fields)
-- [Phase 18 P02]: 7-day notification window balances urgency and user stress - too short (1 day) creates stress, too long (14 days) allows forgetting
-- [Phase 18 P02]: Atomic writes for token rotation prevent credential loss - non-atomic save risks losing both tokens mid-write during power failure
-- [Phase 18 P02]: Credential check runs BEFORE other daily tasks - prevents cascading API failures if credentials expired overnight
-- [Phase 18 P02]: OAuth refresh uses manual fs.writeFile instead of saveAuthProfileStore for atomic write guarantees (temp file + rename)
-- [Phase 18]: Safe migration pattern checks file size and open handles before deletion
-- [Phase 18]: load-env.sh fails fast if auth-profiles.json missing (no silent fallback)
-- [Phase 19]: MCP servers are session-scoped, not daemons - showing as 'not running' between sessions is expected behavior
-- [Phase 19]: Graceful degradation for better-sqlite3 - skips WAL checks when native bindings unavailable
-- [Phase 19]: Overall status derivation: critical if core service/config fails, degraded if non-core fails
-- [Phase 19 P02]: Three alert channels (NOTIFICATION, LOG, OBSERVABILITY) for flexibility - allows different routing per environment
-- [Phase 19 P02]: Alert level determines notification behavior: INFO (5s, no sound), WARNING (10s, sound), CRITICAL (persistent, action button)
-- [Phase 19 P02]: Integration failure threshold at 5 occurrences per hour prevents noise while catching real issues
-- [Phase 19 P02]: Daily alert check integrated into existing daily-tasks.sh (no new launchd plist needed)
-- [Phase 19 P02]: Non-blocking execution - alert failures never prevent other daily tasks from running
-- [Phase 19 P02]: 10MB log rotation with 3 file retention balances disk usage and debugging capability
-- [Phase 19]: better-sqlite3 bundling issue blocks execution - tsdown bundles native module causing \_\_filename error
+### Known Technical Debt
 
-### System Crisis Context
-
-**Critical Issues (v3.0 focus):**
-
-- Services crash/restart constantly — Gateway hangs, MCP servers die, launchd services unstable
-- Integration failures — MCP calls fail, SDK timeouts, cross-brain communication breaks frequently
-- Config corruption — llm-config.json, auth-profiles.json, openclaw.json get overwritten/broken
-- Credential management broken — Keys expire, auth-profiles.json drift, token refresh fails
-- SQLite locking issues — Database locks, KB inconsistency, lost events
-- Silent failures everywhere — No alerts, no monitoring, discover failures manually
-- Change fragility — Config edits, code changes, dependency updates cause cascading failures
-- No recovery procedures — When things break, unclear how to fix them
+- No recovery runbooks (Phase 20 deferred)
+- No integration test suite (CHANGE-05)
+- No pre-commit script validation (CHANGE-06)
+- No dependency version locking (CHANGE-07)
+- OBS-07 health dashboard blocked by better-sqlite3 bundling in tsdown
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-None. Phase 18 complete.
+None. Clean slate for v4.0 planning.
 
 ## Session Continuity
 
-Last session: 2026-02-28
-Stopped at: Completed 19-02-PLAN.md (Automated alerting system with notifications)
-Resume file: Ready for next plan (19-03-PLAN.md)
+Last session: 2026-03-01
+Stopped at: v3.0 milestone archived. Ready for v4.0.
+Resume file: Run `/gsd:new-milestone` to start

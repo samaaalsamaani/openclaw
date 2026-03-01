@@ -8,18 +8,11 @@ A unified Personal AI Operating System connecting three free, world-class AI bra
 
 **The mesh**: Three AI brains, one protocol (MCP), shared memory (KB), unified routing — so the right brain handles every task automatically, and knowledge compounds across all interactions.
 
-## Current Milestone: v3.0 System Reliability & Hardening
+## Current Milestone: v4.0 — TBD
 
-**Goal:** Transform PAIOS from fragile prototype to production-grade system. Eliminate crashes, prevent regressions, catch all failures, enable safe changes.
+**Status:** Planning — run `/gsd:new-milestone` to define requirements and roadmap
 
-**Success criteria:**
-
-- Services run weeks without restart (no crashes/hangs)
-- Config/code changes don't cause cascading failures
-- All failures detected and alerted immediately
-- Documented recovery procedures for every component
-
-**Status:** Defining requirements (NOT adding features — pure stabilization)
+**v3.0 shipped 2026-03-01** — System Reliability & Hardening complete. Core stabilization done. See `.planning/MILESTONES.md` for what shipped and known gaps.
 
 ## Requirements
 
@@ -74,9 +67,9 @@ A unified Personal AI Operating System connecting three free, world-class AI bra
 - ✓ Agent Teams experimental support with quality gates — v2.0
 - ✓ Weekly self-reflection analyzing routing patterns — v2.0
 
-### Active (v3.0 — Stabilization)
+### Active (v4.0 — TBD)
 
-TBD — Will be defined during requirements gathering
+TBD — Will be defined during requirements gathering for next milestone
 
 ### Out of Scope
 
@@ -114,24 +107,30 @@ TBD — Will be defined during requirements gathering
 - PAIOS-MASTER.md created as single source of truth (900+ lines)
 - Cost optimized from ~$780/mo to ~$0-60/mo
 
-### System Crisis (Stabilization Required)
+### System State (post v3.0)
 
-**Critical Issues (v3.0 focus):**
+**v3.0 resolved:**
 
-- **Services crash/restart constantly** — Gateway hangs, MCP servers die, launchd services unstable
-- **Integration failures** — MCP calls fail, SDK timeouts, cross-brain communication breaks frequently
-- **Config corruption** — llm-config.json, auth-profiles.json, openclaw.json get overwritten/broken
-- **Credential management broken** — Keys expire, auth-profiles.json drift, token refresh fails
-- **SQLite locking issues** — Database locks, KB inconsistency, lost events
-- **Silent failures everywhere** — No alerts, no monitoring, discover failures manually
-- **Change fragility** — Config edits, code changes, dependency updates cause cascading failures
-- **Technical debt accumulated** — Rapid development left fragile components throughout system
-- **No recovery procedures** — When things break, unclear how to fix them
+- Gateway crash logging + circuit breakers + launchd hardening (no more silent hangs)
+- WAL mode + busy_timeout on all SQLite databases (no more lock errors)
+- Config schema validation (Zod strict) + auto-backup before writes
+- Credential monitoring with 7-day expiry warnings + OAuth refresh
+- auth-profiles.json as single source of truth (no plist drift)
+- Comprehensive health check + daily alerting via macOS notifications
 
-**Previous Known Issues (v1/v2):**
+**Remaining known gaps (accepted tech debt):**
 
-- Late.dev YouTube token expired, TikTok/Twitter expiring
-- Gateway dist/ not built from source (using installed binary)
+- No documented recovery runbooks (Phase 20 deferred)
+- No integration test suite (CHANGE-05 deferred)
+- No pre-commit script validation (CHANGE-06 deferred)
+- No dependency version locking (CHANGE-07 deferred)
+- OBS-07 health dashboard blocked by better-sqlite3 tsdown bundling issue
+
+**PAIOS v4 graph layer (shipped outside GSD, Feb 28):**
+
+- Memgraph (Docker) + graphiti-core 0.30.0rc5 live at bolt://localhost:7687
+- CDC workers, learning loop, pattern detector all running as launchd services
+- 34K+ edges, 600+ entities, 200+ episodic nodes
 
 ## Constraints
 
@@ -145,19 +144,23 @@ TBD — Will be defined during requirements gathering
 
 ## Key Decisions
 
-| Decision                            | Rationale                                                                                                     | Outcome   |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------- |
-| MCP as the universal protocol       | Both CLIs support MCP server+client natively. Gateway bridges via exec. Standard protocol, no vendor lock-in. | — Pending |
-| Agent SDK replaces subprocess calls | Eliminates ARG_MAX, timeout, parsing, quote escaping bugs. Adds hooks, permissions, structured output.        | — Pending |
-| GSD orchestrates the PAIOS build    | 11 specialized agents, wave-parallel execution, goal-backward verification. Prevents ad-hoc drift.            | — Pending |
-| Skill Creator for 8 native skills   | Bridges 26→0 gap. Claude Code sessions get instant access to KB, content, social capabilities.                | — Pending |
-| Quality model profile (Opus)        | PAIOS is architecture-heavy. Opus reasoning is worth the token cost (free via Max sub anyway).                | — Pending |
-| OpenClaw = Kernel, not rewritten    | Gateway is mature (400+ files). We integrate via SDK/exec, not fork/rewrite.                                  | ✓ Good    |
-| Codex for code, Claude for creative | Each model's strength. Codex = code-optimized sandbox. Claude = best reasoning + writing.                     | — Pending |
-| KB SQLite as shared memory          | Already exists with PARA, FTS, embeddings. Accessible via MCP server.                                         | ✓ Good    |
-
-| Stabilization milestone (v3.0) | Freeze new features, fix everything before building more | All 15 v1/v2 phases shipped but system unstable. Do it right. | — Pending |
+| Decision                                    | Rationale                                                                                                     | Outcome                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| MCP as the universal protocol               | Both CLIs support MCP server+client natively. Gateway bridges via exec. Standard protocol, no vendor lock-in. | ✓ Good                                                                                        |
+| Agent SDK replaces subprocess calls         | Eliminates ARG_MAX, timeout, parsing, quote escaping bugs. Adds hooks, permissions, structured output.        | ✓ Good                                                                                        |
+| GSD orchestrates the PAIOS build            | Wave-parallel execution, goal-backward verification. Prevents ad-hoc drift.                                   | ✓ Good                                                                                        |
+| Skill Creator for 8 native skills           | Bridges 26→0 gap. Claude Code sessions get instant access to KB, content, social capabilities.                | ✓ Good                                                                                        |
+| Quality model profile (Opus)                | PAIOS is architecture-heavy. Opus reasoning is worth the token cost (free via Max sub anyway).                | ⚠️ Revisit — Claude Max rate limits hit with 24 concurrent sessions. Cap waves to 4-5 agents. |
+| OpenClaw = Kernel, not rewritten            | Gateway is mature (400+ files). We integrate via SDK/exec, not fork/rewrite.                                  | ✓ Good                                                                                        |
+| Codex for code, Claude for creative         | Each model's strength. Codex = code-optimized sandbox. Claude = best reasoning + writing.                     | ✓ Good                                                                                        |
+| KB SQLite as shared memory                  | Already exists with PARA, FTS, embeddings. Accessible via MCP server.                                         | ✓ Good                                                                                        |
+| Stabilization milestone (v3.0)              | Freeze new features, fix everything before building more.                                                     | ✓ Good — core stabilization done. Runbooks deferred as accepted tech debt.                    |
+| Non-singleton database pattern              | Callers manage connection lifecycle — different services need different lifetimes.                            | ✓ Good                                                                                        |
+| Permanent errors fail fast, transient retry | 400/401/404 don't retry; ETIMEDOUT/503/504 use exponential backoff.                                           | ✓ Good                                                                                        |
+| Three alert channels (v3.0)                 | NOTIFICATION + LOG + OBSERVABILITY for flexibility per environment.                                           | ✓ Good                                                                                        |
+| Session-scoped MCP servers                  | MCP stdio protocol incompatible with daemon architecture. Requires TCP wrapper for daemonization.             | ✓ Good                                                                                        |
+| Graph layer: Memgraph (v4)                  | Kuzu replaced — Memgraph + graphiti-core for episodic memory, CDC, pattern detection.                         | ✓ Good                                                                                        |
 
 ---
 
-_Last updated: 2026-02-27 after milestone v3.0 started_
+_Last updated: 2026-03-01 after milestone v3.0 shipped_
