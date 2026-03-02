@@ -476,7 +476,7 @@ describe("cross-channel-indexer", () => {
       // FTS5 would throw "fts5: syntax error near 'NOT'" without sanitization
       expect(() => indexer.search({ query: "NOT valid query", excludeChannel: "" })).not.toThrow();
       const results = indexer.search({ query: "NOT valid query", excludeChannel: "" });
-      expect(Array.isArray(results)).toBe(true);
+      expect(results).toEqual([]);
     });
 
     it("search sanitizes FTS5 special syntax: '{column} match' does not throw", async () => {
@@ -495,7 +495,7 @@ describe("cross-channel-indexer", () => {
       // FTS5 would throw "no such column: hello" without sanitization
       expect(() => indexer.search({ query: "{hello} world", excludeChannel: "" })).not.toThrow();
       const results = indexer.search({ query: "{hello} world", excludeChannel: "" });
-      expect(Array.isArray(results)).toBe(true);
+      expect(results).toEqual([]);
     });
 
     it("search returns empty array when query tokenizes to nothing", async () => {
