@@ -37,6 +37,10 @@ import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { runReplyAgent } from "./agent-runner.js";
 import { applySessionHints } from "./body.js";
 import type { buildCommandContext } from "./commands.js";
+import {
+  queryCrossChannelContext,
+  type CrossChannelContextResult,
+} from "./cross-channel-context.js";
 import type { InlineDirectives } from "./directive-handling.js";
 import { buildGroupChatContext, buildGroupIntro } from "./groups.js";
 import { buildInboundMetaSystemPrompt, buildInboundUserContextPrefix } from "./inbound-meta.js";
@@ -272,12 +276,24 @@ export async function runPreparedReply(
     }
   }
 
+  // Cross-channel memory: retrieve context from other channels
+  let crossChannelContextResult: CrossChannelContextResult = { section: "", sources: [] };
+  if (bodyForKb.length >= 10 && !bodyForKb.startsWith("/")) {
+    crossChannelContextResult = await queryCrossChannelContext({
+      query: bodyForKb,
+      sessionKey,
+      agentId,
+    });
+  }
+  const crossChannelContextSection = crossChannelContextResult.section;
+
   const extraSystemPrompt = [
     inboundMetaPrompt,
     groupChatContext,
     groupIntro,
     groupSystemPrompt,
     kbContextSection,
+    crossChannelContextSection,
   ]
     .filter(Boolean)
     .join("\n\n");
