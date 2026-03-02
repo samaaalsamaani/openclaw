@@ -459,5 +459,52 @@ describe("cross-channel-indexer", () => {
 
       expect(results).toEqual([]);
     });
+
+    it("search sanitizes FTS5 special syntax: 'NOT ...' does not throw", async () => {
+      const sessionsDir = path.join(tempDir, "sessions");
+      await mkdir(sessionsDir, { recursive: true });
+
+      const sessionKey = "agent:main:telegram:direct:fts-safety";
+      const filePath = path.join(sessionsDir, `${sessionKey}.jsonl`);
+      await writeFile(
+        filePath,
+        makeJsonlFile([{ role: "user", content: "valid indexable content here" }]),
+      );
+      sessionFiles = [filePath];
+      await indexer.sync();
+
+      // FTS5 would throw "fts5: syntax error near 'NOT'" without sanitization
+      expect(() => indexer.search({ query: "NOT valid query", excludeChannel: "" })).not.toThrow();
+      const results = indexer.search({ query: "NOT valid query", excludeChannel: "" });
+      expect(Array.isArray(results)).toBe(true);
+    });
+
+    it("search sanitizes FTS5 special syntax: '{column} match' does not throw", async () => {
+      const sessionsDir = path.join(tempDir, "sessions");
+      await mkdir(sessionsDir, { recursive: true });
+
+      const sessionKey = "agent:main:telegram:direct:fts-col";
+      const filePath = path.join(sessionsDir, `${sessionKey}.jsonl`);
+      await writeFile(
+        filePath,
+        makeJsonlFile([{ role: "user", content: "some discussion content" }]),
+      );
+      sessionFiles = [filePath];
+      await indexer.sync();
+
+      // FTS5 would throw "no such column: hello" without sanitization
+      expect(() => indexer.search({ query: "{hello} world", excludeChannel: "" })).not.toThrow();
+      const results = indexer.search({ query: "{hello} world", excludeChannel: "" });
+      expect(Array.isArray(results)).toBe(true);
+    });
+
+    it("search returns empty array when query tokenizes to nothing", async () => {
+      sessionFiles = [];
+      await indexer.sync();
+
+      // buildFtsQuery("!!!") → null → early return []
+      const results = indexer.search({ query: "!!!", excludeChannel: "" });
+      expect(results).toEqual([]);
+    });
   });
 });

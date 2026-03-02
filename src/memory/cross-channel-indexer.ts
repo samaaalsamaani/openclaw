@@ -9,6 +9,7 @@ import {
   isSubagentSessionKey,
 } from "../sessions/session-key-utils.js";
 import { ensureCrossChannelIndexSchema } from "./cross-channel-schema.js";
+import { buildFtsQuery } from "./hybrid.js";
 import { buildSessionEntry, listSessionFilesForAgent } from "./session-files.js";
 import { requireNodeSqlite } from "./sqlite.js";
 
@@ -321,6 +322,11 @@ export class CrossChannelIndexer {
     const charBudget = params.charBudget ?? 4000;
     const excludeChannel = params.excludeChannel ?? "";
 
+    const safeQuery = buildFtsQuery(params.query);
+    if (safeQuery === null) {
+      return [];
+    }
+
     let db: ReturnType<CrossChannelIndexer["openDb"]> | null = null;
     try {
       db = this.openDb();
@@ -337,7 +343,7 @@ export class CrossChannelIndexer {
            ORDER BY rank
            LIMIT ?`,
         )
-        .all(params.query, this.agentId, excludeChannel, maxResults) as Array<{
+        .all(safeQuery, this.agentId, excludeChannel, maxResults) as Array<{
         path: string;
         channel: string;
         mtime: number;
