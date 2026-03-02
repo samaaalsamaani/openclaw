@@ -37,6 +37,7 @@ import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { runReplyAgent } from "./agent-runner.js";
 import { applySessionHints } from "./body.js";
 import type { buildCommandContext } from "./commands.js";
+import { buildAttributionFooter } from "./cross-channel-attribution.js";
 import {
   queryCrossChannelContext,
   type CrossChannelContextResult,
@@ -533,7 +534,7 @@ export async function runPreparedReply(
     },
   };
 
-  return runReplyAgent({
+  const replyResult = await runReplyAgent({
     commandBody: prefixedCommandBody,
     followupRun,
     queueKey,
@@ -559,4 +560,30 @@ export async function runPreparedReply(
     shouldInjectGroupIntro,
     typingMode,
   });
+
+  // Attribution footer: append when cross-channel context was used
+  if (crossChannelContextResult.sources.length > 0) {
+    const footer = buildAttributionFooter(crossChannelContextResult.sources);
+    if (footer) {
+      if (Array.isArray(replyResult)) {
+        // Apply to last non-empty text payload in array
+        const lastTextIdx = [...replyResult]
+          .toReversed()
+          .findIndex((r) => typeof r.text === "string" && r.text.length > 0);
+        if (lastTextIdx !== -1) {
+          const idx = replyResult.length - 1 - lastTextIdx;
+          replyResult[idx] = { ...replyResult[idx], text: (replyResult[idx].text ?? "") + footer };
+        }
+      } else if (
+        replyResult &&
+        !replyResult.isError &&
+        typeof replyResult.text === "string" &&
+        replyResult.text.length > 0
+      ) {
+        return { ...replyResult, text: replyResult.text + footer };
+      }
+    }
+  }
+
+  return replyResult;
 }
