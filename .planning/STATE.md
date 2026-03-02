@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Consumer Foundation
-status: ready
-last_updated: "2026-03-02T00:00:00.000Z"
+status: in-progress
+last_updated: "2026-03-02T02:19:50Z"
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 0
-  completed_plans: 0
+  completed_plans: 2
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 ## Current Position
 
-Milestone v4.0 roadmap defined 2026-03-02. Ready to plan Phase 22.
+Phase 22 in progress. Completed plans 22-01 and 22-02.
 
-Run `/gsd:plan-phase 22` to start.
+Resume with Phase 22 next plan.
 
 ## Phase Map
 
@@ -60,6 +60,9 @@ Run `/gsd:plan-phase 22` to start.
 - `fetchWithSsrFGuard()` not bare `fetch()` for any user-controlled URL (SSRF guard pattern)
 - `resolveEffectiveHomeDir()` not `process.env.HOME` for home dir resolution
 - No `workspace:*` in extension `dependencies` — use `peerDependencies` or `devDependencies`
+- Extension peerDependencies use real semver range `>=2026.1.26` (not workspace:\*) for npm compatibility (22-02)
+- better-sqlite3 is already in root dependencies (not devDependencies) — CONCERNS.md stale entry resolved (22-02)
+- OBS-07 health dashboard unblocked — tsdown external: ["better-sqlite3"] already correct (22-02)
 
 ### Known Technical Debt (carried from v3.0)
 
@@ -67,7 +70,7 @@ Run `/gsd:plan-phase 22` to start.
 - No integration test suite (CHANGE-05)
 - No pre-commit script validation (CHANGE-06)
 - No dependency version locking (CHANGE-07)
-- OBS-07 health dashboard blocked by better-sqlite3 bundling in tsdown
+- OBS-07 health dashboard: UNBLOCKED (22-02 confirmed tsdown config correct)
 
 ### Phase 22 Pre-work Context
 
@@ -78,11 +81,11 @@ SSRF-affected files (from .planning/codebase/CONCERNS.md):
 - `src/discord/send.outbound.ts`
 - 6+ other files using bare `fetch()` on user-controlled URLs
 
-better-sqlite3 location: currently in devDependencies, used in `db-init.ts`, `crash-logger.ts`, and others — will crash if devDeps pruned.
+better-sqlite3 location: CONFIRMED in root dependencies (not devDependencies). 22-02 resolved this concern.
 
 process.env.HOME sites: 20+ locations across src/ — need to use `resolveEffectiveHomeDir()` instead.
 
-Extension workspace:_ count: 28 extensions have `workspace:_`in`dependencies` — breaks external npm install.
+Extension peerDependencies: 26 extensions updated in 22-02. Extensions now correctly declare both devDependencies (workspace:\*) and peerDependencies (>=2026.1.26).
 
 ### Pending Todos
 
@@ -90,10 +93,9 @@ None.
 
 ### Blockers/Concerns
 
-None. Roadmap defined, ready to execute.
+None.
 
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: v4.0 roadmap defined from vision document 7 priority bets.
-Resume with: `/gsd:plan-phase 22`
+Stopped at: Completed 22-02-PLAN.md (extension peerDependencies + better-sqlite3 verification)

@@ -75,7 +75,7 @@ See: `.planning/milestones/v3.0-ROADMAP.md` for full phase details
 **Goal**: Close all known security and reliability gaps before any growth investment — SSRF exposure fixed in 9+ files, `better-sqlite3` in production deps, 28 extensions with correct dependency declarations, and `resolveEffectiveHomeDir()` used everywhere `process.env.HOME` was hardcoded.
 **Depends on**: Nothing (first phase of v4.0)
 **Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, FOUND-05
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 **Success Criteria** (what must be TRUE):
 
 1. Every file that makes outbound HTTP requests uses `fetchWithSsrFGuard()` — no unguarded `fetch()` calls on user-controlled URLs remain in src/
@@ -221,17 +221,17 @@ Plans:
 
 ## Progress
 
-| Phase | Milestone | Plans | Status   | Completed  |
-| ----- | --------- | ----- | -------- | ---------- |
-| 1–9   | v1.0      | 29/29 | Complete | 2026-02-22 |
-| 10–15 | v2.0      | 17/17 | Complete | 2026-02-22 |
-| 16–19 | v3.0      | 13/13 | Complete | 2026-02-28 |
-| 20    | v3.0      | 0/3   | Deferred | —          |
-| 21    | v3.0      | ~2/3  | Partial  | 2026-03-01 |
-| 22    | v4.0      | 0/3   | Planned  | —          |
-| 23    | v4.0      | TBD   | Pending  | —          |
-| 24    | v4.0      | TBD   | Pending  | —          |
-| 25    | v4.0      | TBD   | Pending  | —          |
-| 26    | v4.0      | TBD   | Pending  | —          |
-| 27    | v4.0      | TBD   | Pending  | —          |
-| 28    | v4.0      | TBD   | Pending  | —          |
+| Phase | Milestone | Plans       | Status   | Completed  |
+| ----- | --------- | ----------- | -------- | ---------- |
+| 1–9   | v1.0      | 29/29       | Complete | 2026-02-22 |
+| 10–15 | v2.0      | 17/17       | Complete | 2026-02-22 |
+| 16–19 | v3.0      | 13/13       | Complete | 2026-02-28 |
+| 20    | v3.0      | 0/3         | Deferred | —          |
+| 21    | v3.0      | ~2/3        | Partial  | 2026-03-01 |
+| 22    | 1/3       | In Progress |          | —          |
+| 23    | v4.0      | TBD         | Pending  | —          |
+| 24    | v4.0      | TBD         | Pending  | —          |
+| 25    | v4.0      | TBD         | Pending  | —          |
+| 26    | v4.0      | TBD         | Pending  | —          |
+| 27    | v4.0      | TBD         | Pending  | —          |
+| 28    | v4.0      | TBD         | Pending  | —          |

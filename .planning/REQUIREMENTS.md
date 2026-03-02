@@ -12,8 +12,8 @@
 ### Platform Foundations
 
 - [ ] **FOUND-01**: `fetchWithSsrFGuard()` used in all files that make outbound requests — no direct `fetch()` bypasses (currently 9+ files)
-- [ ] **FOUND-02**: `better-sqlite3` moved from `devDependencies` to `dependencies` in production packages
-- [ ] **FOUND-03**: All 28 extensions use `peerDependencies`/`devDependencies` for `openclaw` — no `workspace:*` in `dependencies`
+- [x] **FOUND-02**: `better-sqlite3` moved from `devDependencies` to `dependencies` in production packages
+- [x] **FOUND-03**: All 28 extensions use `peerDependencies`/`devDependencies` for `openclaw` — no `workspace:*` in `dependencies`
 - [ ] **FOUND-04**: `resolveEffectiveHomeDir()` used everywhere instead of `process.env.HOME` (20+ sites)
 - [ ] **FOUND-05**: SSRF guard test coverage confirms bypass is closed across all affected files
 
@@ -112,45 +112,45 @@ Deferred. Tracked but not in current roadmap.
 
 ## Traceability
 
-| Requirement | Phase    | Status  |
-| ----------- | -------- | ------- |
-| FOUND-01    | Phase 22 | Pending |
-| FOUND-02    | Phase 22 | Pending |
-| FOUND-03    | Phase 22 | Pending |
-| FOUND-04    | Phase 22 | Pending |
-| FOUND-05    | Phase 22 | Pending |
-| MEM-01      | Phase 23 | Pending |
-| MEM-02      | Phase 23 | Pending |
-| MEM-03      | Phase 23 | Pending |
-| MEM-04      | Phase 23 | Pending |
-| MEM-05      | Phase 23 | Pending |
-| ONBD-01     | Phase 24 | Pending |
-| ONBD-02     | Phase 24 | Pending |
-| ONBD-03     | Phase 24 | Pending |
-| ONBD-04     | Phase 24 | Pending |
-| ONBD-05     | Phase 24 | Pending |
-| PRO-01      | Phase 25 | Pending |
-| PRO-02      | Phase 25 | Pending |
-| PRO-03      | Phase 25 | Pending |
-| PRO-04      | Phase 25 | Pending |
-| PRO-05      | Phase 25 | Pending |
-| BILL-01     | Phase 26 | Pending |
-| BILL-02     | Phase 26 | Pending |
-| BILL-03     | Phase 26 | Pending |
-| BILL-04     | Phase 26 | Pending |
-| BILL-05     | Phase 26 | Pending |
-| BILL-06     | Phase 26 | Pending |
-| APP-01      | Phase 27 | Pending |
-| APP-02      | Phase 27 | Pending |
-| APP-03      | Phase 27 | Pending |
-| APP-04      | Phase 27 | Pending |
-| APP-05      | Phase 27 | Pending |
-| APP-06      | Phase 27 | Pending |
-| DEV-01      | Phase 28 | Pending |
-| DEV-02      | Phase 28 | Pending |
-| DEV-03      | Phase 28 | Pending |
-| DEV-04      | Phase 28 | Pending |
-| DEV-05      | Phase 28 | Pending |
+| Requirement | Phase    | Status   |
+| ----------- | -------- | -------- |
+| FOUND-01    | Phase 22 | Pending  |
+| FOUND-02    | Phase 22 | Complete |
+| FOUND-03    | Phase 22 | Complete |
+| FOUND-04    | Phase 22 | Pending  |
+| FOUND-05    | Phase 22 | Pending  |
+| MEM-01      | Phase 23 | Pending  |
+| MEM-02      | Phase 23 | Pending  |
+| MEM-03      | Phase 23 | Pending  |
+| MEM-04      | Phase 23 | Pending  |
+| MEM-05      | Phase 23 | Pending  |
+| ONBD-01     | Phase 24 | Pending  |
+| ONBD-02     | Phase 24 | Pending  |
+| ONBD-03     | Phase 24 | Pending  |
+| ONBD-04     | Phase 24 | Pending  |
+| ONBD-05     | Phase 24 | Pending  |
+| PRO-01      | Phase 25 | Pending  |
+| PRO-02      | Phase 25 | Pending  |
+| PRO-03      | Phase 25 | Pending  |
+| PRO-04      | Phase 25 | Pending  |
+| PRO-05      | Phase 25 | Pending  |
+| BILL-01     | Phase 26 | Pending  |
+| BILL-02     | Phase 26 | Pending  |
+| BILL-03     | Phase 26 | Pending  |
+| BILL-04     | Phase 26 | Pending  |
+| BILL-05     | Phase 26 | Pending  |
+| BILL-06     | Phase 26 | Pending  |
+| APP-01      | Phase 27 | Pending  |
+| APP-02      | Phase 27 | Pending  |
+| APP-03      | Phase 27 | Pending  |
+| APP-04      | Phase 27 | Pending  |
+| APP-05      | Phase 27 | Pending  |
+| APP-06      | Phase 27 | Pending  |
+| DEV-01      | Phase 28 | Pending  |
+| DEV-02      | Phase 28 | Pending  |
+| DEV-03      | Phase 28 | Pending  |
+| DEV-04      | Phase 28 | Pending  |
+| DEV-05      | Phase 28 | Pending  |
 
 **Coverage:**
 
