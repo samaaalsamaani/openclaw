@@ -16,6 +16,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import type { RequestClient } from "@buape/carbon";
+import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
+import { SsrFBlockedError } from "../infra/net/ssrf.js";
 import type { RetryRunner } from "../infra/retry-policy.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
 
@@ -264,16 +266,35 @@ export async function sendDiscordVoiceMessage(
 
   // Step 2: Upload the file to Discord's CDN
   // Note: Not wrapped in retry runner - upload URLs are single-use and CDN behavior differs
-  const uploadResponse = await fetch(upload_url, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "audio/ogg",
-    },
-    body: new Uint8Array(audioBuffer),
-  });
+  // upload_url comes from Discord API response — externally-sourced URL (SSRF risk)
+  let uploadRelease: (() => Promise<void>) | null = null;
+  try {
+    const guardResult = await fetchWithSsrFGuard({
+      url: upload_url,
+      init: {
+        method: "PUT",
+        headers: {
+          "Content-Type": "audio/ogg",
+        },
+        body: new Uint8Array(audioBuffer),
+      },
+      auditContext: "discord-voice-upload",
+    });
+    uploadRelease = guardResult.release;
+    const uploadResponse = guardResult.response;
 
-  if (!uploadResponse.ok) {
-    throw new Error(`Failed to upload voice message: ${uploadResponse.status}`);
+    if (!uploadResponse.ok) {
+      throw new Error(`Failed to upload voice message: ${uploadResponse.status}`);
+    }
+  } catch (error) {
+    if (error instanceof SsrFBlockedError) {
+      throw error;
+    }
+    throw error;
+  } finally {
+    if (uploadRelease) {
+      await uploadRelease();
+    }
   }
 
   // Step 3: Send the message with voice message flag and metadata

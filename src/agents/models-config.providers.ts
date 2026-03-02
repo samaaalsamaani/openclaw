@@ -1,5 +1,7 @@
 import type { OpenClawConfig } from "../config/config.js";
 import type { ModelDefinitionConfig } from "../config/types.models.js";
+import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
+import { SsrFBlockedError } from "../infra/net/ssrf.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   KILOCODE_BASE_URL,
@@ -238,33 +240,46 @@ async function discoverOllamaModels(baseUrl?: string): Promise<ModelDefinitionCo
   }
   try {
     const apiBase = resolveOllamaApiBase(baseUrl);
-    const response = await fetch(`${apiBase}/api/tags`, {
-      signal: AbortSignal.timeout(5000),
+    const targetUrl = `${apiBase}/api/tags`;
+    // Use allowedHostnames policy — baseUrl comes from user config (SSRF risk)
+    const parsed = new URL(apiBase);
+    const { response, release } = await fetchWithSsrFGuard({
+      url: targetUrl,
+      init: { signal: AbortSignal.timeout(5000) },
+      policy: { allowedHostnames: [parsed.hostname] },
+      auditContext: "models-config-probe",
     });
-    if (!response.ok) {
-      log.warn(`Failed to discover Ollama models: ${response.status}`);
-      return [];
+    try {
+      if (!response.ok) {
+        log.warn(`Failed to discover Ollama models: ${response.status}`);
+        return [];
+      }
+      const data = (await response.json()) as OllamaTagsResponse;
+      if (!data.models || data.models.length === 0) {
+        log.warn("No Ollama models found on local instance");
+        return [];
+      }
+      return data.models.map((model) => {
+        const modelId = model.name;
+        const isReasoning =
+          modelId.toLowerCase().includes("r1") || modelId.toLowerCase().includes("reasoning");
+        return {
+          id: modelId,
+          name: modelId,
+          reasoning: isReasoning,
+          input: ["text"],
+          cost: OLLAMA_DEFAULT_COST,
+          contextWindow: OLLAMA_DEFAULT_CONTEXT_WINDOW,
+          maxTokens: OLLAMA_DEFAULT_MAX_TOKENS,
+        };
+      });
+    } finally {
+      await release();
     }
-    const data = (await response.json()) as OllamaTagsResponse;
-    if (!data.models || data.models.length === 0) {
-      log.warn("No Ollama models found on local instance");
-      return [];
-    }
-    return data.models.map((model) => {
-      const modelId = model.name;
-      const isReasoning =
-        modelId.toLowerCase().includes("r1") || modelId.toLowerCase().includes("reasoning");
-      return {
-        id: modelId,
-        name: modelId,
-        reasoning: isReasoning,
-        input: ["text"],
-        cost: OLLAMA_DEFAULT_COST,
-        contextWindow: OLLAMA_DEFAULT_CONTEXT_WINDOW,
-        maxTokens: OLLAMA_DEFAULT_MAX_TOKENS,
-      };
-    });
   } catch (error) {
+    if (error instanceof SsrFBlockedError) {
+      throw error;
+    }
     log.warn(`Failed to discover Ollama models: ${String(error)}`);
     return [];
   }
@@ -284,40 +299,54 @@ async function discoverVllmModels(
 
   try {
     const trimmedApiKey = apiKey?.trim();
-    const response = await fetch(url, {
-      headers: trimmedApiKey ? { Authorization: `Bearer ${trimmedApiKey}` } : undefined,
-      signal: AbortSignal.timeout(5000),
+    // Use allowedHostnames policy — baseUrl comes from user config (SSRF risk)
+    const parsedBase = new URL(trimmedBaseUrl);
+    const { response, release } = await fetchWithSsrFGuard({
+      url,
+      init: {
+        headers: trimmedApiKey ? { Authorization: `Bearer ${trimmedApiKey}` } : undefined,
+        signal: AbortSignal.timeout(5000),
+      },
+      policy: { allowedHostnames: [parsedBase.hostname] },
+      auditContext: "models-config-probe",
     });
-    if (!response.ok) {
-      log.warn(`Failed to discover vLLM models: ${response.status}`);
-      return [];
-    }
-    const data = (await response.json()) as VllmModelsResponse;
-    const models = data.data ?? [];
-    if (models.length === 0) {
-      log.warn("No vLLM models found on local instance");
-      return [];
-    }
+    try {
+      if (!response.ok) {
+        log.warn(`Failed to discover vLLM models: ${response.status}`);
+        return [];
+      }
+      const data = (await response.json()) as VllmModelsResponse;
+      const models = data.data ?? [];
+      if (models.length === 0) {
+        log.warn("No vLLM models found on local instance");
+        return [];
+      }
 
-    return models
-      .map((m) => ({ id: typeof m.id === "string" ? m.id.trim() : "" }))
-      .filter((m) => Boolean(m.id))
-      .map((m) => {
-        const modelId = m.id;
-        const lower = modelId.toLowerCase();
-        const isReasoning =
-          lower.includes("r1") || lower.includes("reasoning") || lower.includes("think");
-        return {
-          id: modelId,
-          name: modelId,
-          reasoning: isReasoning,
-          input: ["text"],
-          cost: VLLM_DEFAULT_COST,
-          contextWindow: VLLM_DEFAULT_CONTEXT_WINDOW,
-          maxTokens: VLLM_DEFAULT_MAX_TOKENS,
-        } satisfies ModelDefinitionConfig;
-      });
+      return models
+        .map((m) => ({ id: typeof m.id === "string" ? m.id.trim() : "" }))
+        .filter((m) => Boolean(m.id))
+        .map((m) => {
+          const modelId = m.id;
+          const lower = modelId.toLowerCase();
+          const isReasoning =
+            lower.includes("r1") || lower.includes("reasoning") || lower.includes("think");
+          return {
+            id: modelId,
+            name: modelId,
+            reasoning: isReasoning,
+            input: ["text"],
+            cost: VLLM_DEFAULT_COST,
+            contextWindow: VLLM_DEFAULT_CONTEXT_WINDOW,
+            maxTokens: VLLM_DEFAULT_MAX_TOKENS,
+          } satisfies ModelDefinitionConfig;
+        });
+    } finally {
+      await release();
+    }
   } catch (error) {
+    if (error instanceof SsrFBlockedError) {
+      throw error;
+    }
     log.warn(`Failed to discover vLLM models: ${String(error)}`);
     return [];
   }

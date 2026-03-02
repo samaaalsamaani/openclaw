@@ -7,6 +7,8 @@ import { resolveChunkMode } from "../auto-reply/chunk.js";
 import { loadConfig } from "../config/config.js";
 import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
 import { recordChannelActivity } from "../infra/channel-activity.js";
+import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
+import { SsrFBlockedError } from "../infra/net/ssrf.js";
 import type { RetryConfig } from "../infra/retry.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
 import { convertMarkdownTables } from "../markdown/tables.js";
@@ -344,37 +346,55 @@ export async function sendWebhookMessageDiscord(
   const replyTo = typeof opts.replyTo === "string" ? opts.replyTo.trim() : "";
   const messageReference = replyTo ? { message_id: replyTo, fail_if_not_exists: false } : undefined;
 
-  const response = await fetch(
-    resolveWebhookExecutionUrl({
-      webhookId,
-      webhookToken,
-      threadId: opts.threadId,
-      wait: opts.wait,
-    }),
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        content: text,
-        username: opts.username?.trim() || undefined,
-        avatar_url: opts.avatarUrl?.trim() || undefined,
-        ...(messageReference ? { message_reference: messageReference } : {}),
+  // webhook URL is derived from user-supplied webhookId/webhookToken — externally-sourced (SSRF risk)
+  let webhookRelease: (() => Promise<void>) | null = null;
+  let payload: { id?: string; channel_id?: string };
+  try {
+    const guardResult = await fetchWithSsrFGuard({
+      url: resolveWebhookExecutionUrl({
+        webhookId,
+        webhookToken,
+        threadId: opts.threadId,
+        wait: opts.wait,
       }),
-    },
-  );
-  if (!response.ok) {
-    const raw = await response.text().catch(() => "");
-    throw new Error(
-      `Discord webhook send failed (${response.status}${raw ? `: ${raw.slice(0, 200)}` : ""})`,
-    );
-  }
+      init: {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          content: text,
+          username: opts.username?.trim() || undefined,
+          avatar_url: opts.avatarUrl?.trim() || undefined,
+          ...(messageReference ? { message_reference: messageReference } : {}),
+        }),
+      },
+      auditContext: "discord-webhook",
+    });
+    webhookRelease = guardResult.release;
+    const response = guardResult.response;
 
-  const payload = (await response.json().catch(() => ({}))) as {
-    id?: string;
-    channel_id?: string;
-  };
+    if (!response.ok) {
+      const raw = await response.text().catch(() => "");
+      throw new Error(
+        `Discord webhook send failed (${response.status}${raw ? `: ${raw.slice(0, 200)}` : ""})`,
+      );
+    }
+
+    payload = (await response.json().catch(() => ({}))) as {
+      id?: string;
+      channel_id?: string;
+    };
+  } catch (error) {
+    if (error instanceof SsrFBlockedError) {
+      throw error;
+    }
+    throw error;
+  } finally {
+    if (webhookRelease) {
+      await webhookRelease();
+    }
+  }
   try {
     const account = resolveDiscordAccount({
       cfg: loadConfig(),
