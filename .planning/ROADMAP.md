@@ -75,6 +75,7 @@ See: `.planning/milestones/v3.0-ROADMAP.md` for full phase details
 **Goal**: Close all known security and reliability gaps before any growth investment — SSRF exposure fixed in 9+ files, `better-sqlite3` in production deps, 28 extensions with correct dependency declarations, and `resolveEffectiveHomeDir()` used everywhere `process.env.HOME` was hardcoded.
 **Depends on**: Nothing (first phase of v4.0)
 **Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, FOUND-05
+**Plans:** 3 plans
 **Success Criteria** (what must be TRUE):
 
 1. Every file that makes outbound HTTP requests uses `fetchWithSsrFGuard()` — no unguarded `fetch()` calls on user-controlled URLs remain in src/
@@ -85,9 +86,9 @@ See: `.planning/milestones/v3.0-ROADMAP.md` for full phase details
 
 Plans:
 
-- [ ] 22-01: Fix SSRF gaps — replace direct fetch() with fetchWithSsrFGuard() in all affected files
-- [ ] 22-02: Fix dependency declarations — better-sqlite3 to prod deps, extension workspace:\* cleanup
-- [ ] 22-03: Fix home dir resolution — replace process.env.HOME with resolveEffectiveHomeDir() sitewide
+- [ ] 22-01-PLAN.md — Fix SSRF gaps: replace direct fetch() with fetchWithSsrFGuard() in all affected files, add per-module guard call tests
+- [ ] 22-02-PLAN.md — Fix dependency declarations: verify better-sqlite3 in prod deps, add peerDependencies to 26 extensions
+- [ ] 22-03-PLAN.md — Fix home dir resolution: replace process.env.HOME with resolveRequiredHomeDir() across all 31 sites
 
 ---
 
@@ -227,7 +228,7 @@ Plans:
 | 16–19 | v3.0      | 13/13 | Complete | 2026-02-28 |
 | 20    | v3.0      | 0/3   | Deferred | —          |
 | 21    | v3.0      | ~2/3  | Partial  | 2026-03-01 |
-| 22    | v4.0      | TBD   | Pending  | —          |
+| 22    | v4.0      | 0/3   | Planned  | —          |
 | 23    | v4.0      | TBD   | Pending  | —          |
 | 24    | v4.0      | TBD   | Pending  | —          |
 | 25    | v4.0      | TBD   | Pending  | —          |
