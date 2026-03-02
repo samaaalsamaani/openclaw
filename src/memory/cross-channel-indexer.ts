@@ -102,6 +102,7 @@ export class CrossChannelIndexer {
   private readonly dbPath: string;
   private _started = false;
   private _interval: ReturnType<typeof setInterval> | null = null;
+  private _schemaEnsured = false;
 
   private constructor(agentId: string) {
     this.agentId = agentId;
@@ -136,7 +137,10 @@ export class CrossChannelIndexer {
     const db = new DatabaseSync(this.dbPath);
     db.exec("PRAGMA journal_mode = WAL");
     db.exec("PRAGMA busy_timeout = 5000");
-    ensureCrossChannelIndexSchema(db);
+    if (!this._schemaEnsured) {
+      ensureCrossChannelIndexSchema(db);
+      this._schemaEnsured = true;
+    }
     return db;
   }
 

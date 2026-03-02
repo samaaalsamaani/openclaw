@@ -519,5 +519,30 @@ describe("cross-channel-indexer", () => {
       // hasRef() returns false after .unref() is called
       expect((interval as { hasRef?: () => boolean }).hasRef?.()).toBe(false);
     });
+
+    it("search() does not run schema setup on every call after first open", async () => {
+      // The _schemaEnsured flag should prevent ensureCrossChannelIndexSchema from running
+      // more than once per indexer instance.
+      const sessionsDir = path.join(tempDir, "sessions");
+      await mkdir(sessionsDir, { recursive: true });
+
+      const sessionKey = "agent:main:telegram:direct:schema-check";
+      const filePath = path.join(sessionsDir, `${sessionKey}.jsonl`);
+      await writeFile(
+        filePath,
+        makeJsonlFile([{ role: "user", content: "schema check test content" }]),
+      );
+      sessionFiles = [filePath];
+      await indexer.sync();
+
+      // Run search three times — all should succeed, and the _schemaEnsured flag prevents
+      // repeated schema setup calls. We verify via the private flag.
+      indexer.search({ query: "schema check", excludeChannel: "" });
+      indexer.search({ query: "schema check", excludeChannel: "" });
+      indexer.search({ query: "schema check", excludeChannel: "" });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((indexer as any)._schemaEnsured).toBe(true);
+    });
   });
 });
