@@ -105,7 +105,7 @@ Plans:
 4. Adding or removing a channel from config causes the memory index to update without manual intervention
 5. Existing per-channel memory behavior is unchanged for users with only one channel connected
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 
@@ -231,7 +231,7 @@ Plans:
 | 20    | v3.0      | 0/3         | Deferred | —          |
 | 21    | v3.0      | ~2/3        | Partial  | 2026-03-01 |
 | 22    | 1/3       | In Progress |          | —          |
-| 23    | 1/3       | In Progress |          | —          |
+| 23    | 2/3       | In Progress |          | —          |
 | 24    | v4.0      | TBD         | Pending  | —          |
 | 25    | v4.0      | TBD         | Pending  | —          |
 | 26    | v4.0      | TBD         | Pending  | —          |

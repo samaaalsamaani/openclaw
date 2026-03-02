@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Consumer Foundation
 status: in-progress
-last_updated: "2026-03-02T14:50:00Z"
+last_updated: "2026-03-02T14:56:00Z"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 0
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 ## Current Position
 
-**Phase 23 in progress** (23-01 COMPLETE: cross-channel memory indexer).
+**Phase 23 in progress** (23-01 COMPLETE: cross-channel memory indexer, 23-02 COMPLETE: cross-channel context injection).
 
-Resume with Phase 23 Plan 02 (cross-channel context injection).
+Resume with Phase 23 Plan 03 (attribution footer).
 
 ## Phase Map
 
@@ -54,6 +54,10 @@ Resume with Phase 23 Plan 02 (cross-channel context injection).
 - CrossChannelIndexer singleton via module-level INDEXER_CACHE Map keyed by agentId — prevents duplicate intervals (23-01)
 - FTS5 trigram tokenizer for cross-channel search — no embedding dependency for initial MEM-01/MEM-05 delivery (23-01)
 - Cross-channel index DB at ~/.openclaw/agents/<agentId>/cross-channel-memory.sqlite (agent-level, not workspace) (23-01)
+- crossChannelContextResult declared at function scope in runPreparedReply() so Plan 03 can access result.sources for attribution without re-querying (23-02)
+- bodyForKb guard reused for cross-channel query (same <10 char / slash-command conditions as kbContextSection) — consistent guard behavior (23-02)
+- Promise.race([doSearch, setTimeout(empty, 400ms)]) — latency-bounded async retrieval pattern for optional context augmentation (23-02)
+- Section format: "--- CROSS-CHANNEL CONTEXT ---\n[From {Channel}, {N} days ago]: {snippet}" (23-02)
 - Non-singleton database pattern (callers manage connection lifecycle)
 - Permanent errors fail fast (400/401/404); transient errors retry with exponential backoff
 - Session-scoped MCP servers (TCP wrapper needed for true daemon architecture)
@@ -100,6 +104,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-02T14:50:00Z
-Stopped at: Completed 23-01-PLAN.md (cross-channel memory indexer — CrossChannelIndexer singleton, FTS5 schema, 14 tests).
-Next: Phase 23 Plan 02 — cross-channel context injection (search integration into agent reply pipeline).
+Last session: 2026-03-02T14:56:00Z
+Stopped at: Completed 23-02-PLAN.md (cross-channel context injection — queryCrossChannelContext, 400ms timeout, extraSystemPrompt injection, 8 tests).
+Next: Phase 23 Plan 03 — attribution footer (crossChannelContextResult.sources available at function scope in runPreparedReply()).
