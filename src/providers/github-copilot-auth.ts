@@ -3,6 +3,8 @@ import { ensureAuthProfileStore, upsertAuthProfile } from "../agents/auth-profil
 import { updateConfig } from "../commands/models/shared.js";
 import { applyAuthProfileConfig } from "../commands/onboard-auth.js";
 import { logConfigUpdated } from "../config/logging.js";
+import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
+import { SsrFBlockedError } from "../infra/net/ssrf.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { stylePromptTitle } from "../terminal/prompt-style.js";
 
@@ -43,24 +45,42 @@ async function requestDeviceCode(params: { scope: string }): Promise<DeviceCodeR
     scope: params.scope,
   });
 
-  const res = await fetch(DEVICE_CODE_URL, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
-  });
+  let deviceRelease: (() => Promise<void>) | null = null;
+  try {
+    const guardResult = await fetchWithSsrFGuard({
+      url: DEVICE_CODE_URL,
+      init: {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body,
+      },
+      auditContext: "copilot-auth",
+    });
+    deviceRelease = guardResult.release;
+    const res = guardResult.response;
 
-  if (!res.ok) {
-    throw new Error(`GitHub device code failed: HTTP ${res.status}`);
-  }
+    if (!res.ok) {
+      throw new Error(`GitHub device code failed: HTTP ${res.status}`);
+    }
 
-  const json = parseJsonResponse<DeviceCodeResponse>(await res.json());
-  if (!json.device_code || !json.user_code || !json.verification_uri) {
-    throw new Error("GitHub device code response missing fields");
+    const json = parseJsonResponse<DeviceCodeResponse>(await res.json());
+    if (!json.device_code || !json.user_code || !json.verification_uri) {
+      throw new Error("GitHub device code response missing fields");
+    }
+    return json;
+  } catch (error) {
+    if (error instanceof SsrFBlockedError) {
+      throw error;
+    }
+    throw error;
+  } finally {
+    if (deviceRelease) {
+      await deviceRelease();
+    }
   }
-  return json;
 }
 
 async function pollForAccessToken(params: {
@@ -75,40 +95,58 @@ async function pollForAccessToken(params: {
   });
 
   while (Date.now() < params.expiresAt) {
-    const res = await fetch(ACCESS_TOKEN_URL, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: bodyBase,
-    });
+    let tokenRelease: (() => Promise<void>) | null = null;
+    try {
+      const guardResult = await fetchWithSsrFGuard({
+        url: ACCESS_TOKEN_URL,
+        init: {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: bodyBase,
+        },
+        auditContext: "copilot-auth",
+      });
+      tokenRelease = guardResult.release;
+      const res = guardResult.response;
 
-    if (!res.ok) {
-      throw new Error(`GitHub device token failed: HTTP ${res.status}`);
-    }
+      if (!res.ok) {
+        throw new Error(`GitHub device token failed: HTTP ${res.status}`);
+      }
 
-    const json = parseJsonResponse<DeviceTokenResponse>(await res.json());
-    if ("access_token" in json && typeof json.access_token === "string") {
-      return json.access_token;
-    }
+      const json = parseJsonResponse<DeviceTokenResponse>(await res.json());
+      if ("access_token" in json && typeof json.access_token === "string") {
+        return json.access_token;
+      }
 
-    const err = "error" in json ? json.error : "unknown";
-    if (err === "authorization_pending") {
-      await new Promise((r) => setTimeout(r, params.intervalMs));
-      continue;
+      const err = "error" in json ? json.error : "unknown";
+      if (err === "authorization_pending") {
+        await new Promise((r) => setTimeout(r, params.intervalMs));
+        continue;
+      }
+      if (err === "slow_down") {
+        await new Promise((r) => setTimeout(r, params.intervalMs + 2000));
+        continue;
+      }
+      if (err === "expired_token") {
+        throw new Error("GitHub device code expired; run login again");
+      }
+      if (err === "access_denied") {
+        throw new Error("GitHub login cancelled");
+      }
+      throw new Error(`GitHub device flow error: ${err}`);
+    } catch (error) {
+      if (error instanceof SsrFBlockedError) {
+        throw error;
+      }
+      throw error;
+    } finally {
+      if (tokenRelease) {
+        await tokenRelease();
+      }
     }
-    if (err === "slow_down") {
-      await new Promise((r) => setTimeout(r, params.intervalMs + 2000));
-      continue;
-    }
-    if (err === "expired_token") {
-      throw new Error("GitHub device code expired; run login again");
-    }
-    if (err === "access_denied") {
-      throw new Error("GitHub login cancelled");
-    }
-    throw new Error(`GitHub device flow error: ${err}`);
   }
 
   throw new Error("GitHub device code expired; run login again");

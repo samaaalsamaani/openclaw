@@ -61,10 +61,12 @@ function createSlackMediaFetch(token: string): FetchLike {
       includeAuth = false;
       const parsed = assertSlackFileUrl(url);
       headers.set("Authorization", `Bearer ${token}`);
+      // SSRF exemption: manual cross-origin auth-stripping redirect logic; guard's redirect handling would conflict. See Phase 22 FOUND-01.
       return fetch(parsed.href, { ...rest, headers, redirect: "manual" });
     }
 
     headers.delete("Authorization");
+    // SSRF exemption: manual cross-origin auth-stripping redirect logic; guard's redirect handling would conflict. See Phase 22 FOUND-01.
     return fetch(url, { ...rest, headers, redirect: "manual" });
   };
 }
@@ -78,6 +80,7 @@ function createSlackMediaFetch(token: string): FetchLike {
 export async function fetchWithSlackAuth(url: string, token: string): Promise<Response> {
   const parsed = assertSlackFileUrl(url);
 
+  // SSRF exemption: manual cross-origin auth-stripping redirect logic; guard's redirect handling would conflict. See Phase 22 FOUND-01.
   // Initial request with auth and manual redirect handling
   const initialRes = await fetch(parsed.href, {
     headers: { Authorization: `Bearer ${token}` },

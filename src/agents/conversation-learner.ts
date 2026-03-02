@@ -10,6 +10,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { emitAgentEvent } from "../infra/agent-events.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
+import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
+import { SsrFBlockedError } from "../infra/net/ssrf.js";
 import { defaultRuntime } from "../runtime.js";
 import { loadLlmConfig, resolveSubsystem } from "./llm-config-reader.js";
 
@@ -78,22 +80,29 @@ Return a JSON array of objects with {title, content, tags} or an empty array [] 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
+  let learnerRelease: (() => Promise<void>) | null = null;
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+    const guardResult = await fetchWithSsrFGuard({
+      url: "https://api.anthropic.com/v1/messages",
+      init: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: EXTRACTION_MODEL,
+          max_tokens: 512,
+          messages: [{ role: "user", content: prompt }],
+        }),
+        signal: controller.signal,
       },
-      body: JSON.stringify({
-        model: EXTRACTION_MODEL,
-        max_tokens: 512,
-        messages: [{ role: "user", content: prompt }],
-      }),
-      signal: controller.signal,
+      auditContext: "conversation-learner",
     });
     clearTimeout(timeout);
+    learnerRelease = guardResult.release;
+    const response = guardResult.response;
 
     if (!response.ok) {
       return [];
@@ -112,9 +121,16 @@ Return a JSON array of objects with {title, content, tags} or an empty array [] 
     return Array.isArray(parsed)
       ? parsed.filter((f) => f.title && f.content).slice(0, MAX_INSERTS_PER_TURN)
       : [];
-  } catch {
+  } catch (error) {
     clearTimeout(timeout);
+    if (error instanceof SsrFBlockedError) {
+      throw error;
+    }
     return [];
+  } finally {
+    if (learnerRelease) {
+      await learnerRelease();
+    }
   }
 }
 

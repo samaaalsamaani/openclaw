@@ -6,6 +6,8 @@ import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import { extractArchive } from "../infra/archive.js";
 import { resolveBrewExecutable } from "../infra/brew.js";
+import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
+import { SsrFBlockedError } from "../infra/net/ssrf.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { CONFIG_DIR } from "../utils.js";
@@ -216,21 +218,43 @@ async function installSignalCliViaBrew(runtime: RuntimeEnv): Promise<SignalInsta
 
 async function installSignalCliFromRelease(runtime: RuntimeEnv): Promise<SignalInstallResult> {
   const apiUrl = "https://api.github.com/repos/AsamK/signal-cli/releases/latest";
-  const response = await fetch(apiUrl, {
-    headers: {
-      "User-Agent": "openclaw",
-      Accept: "application/vnd.github+json",
-    },
-  });
+  let signalRelease: (() => Promise<void>) | null = null;
+  let payload: ReleaseResponse;
+  try {
+    const guardResult = await fetchWithSsrFGuard({
+      url: apiUrl,
+      init: {
+        headers: {
+          "User-Agent": "openclaw",
+          Accept: "application/vnd.github+json",
+        },
+      },
+      auditContext: "signal-install",
+    });
+    signalRelease = guardResult.release;
+    const response = guardResult.response;
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: `Failed to fetch release info (${response.status})`,
+      };
+    }
+
+    payload = (await response.json()) as ReleaseResponse;
+  } catch (error) {
+    if (error instanceof SsrFBlockedError) {
+      throw error;
+    }
     return {
       ok: false,
-      error: `Failed to fetch release info (${response.status})`,
+      error: `Failed to fetch release info: ${String(error)}`,
     };
+  } finally {
+    if (signalRelease) {
+      await signalRelease();
+    }
   }
-
-  const payload = (await response.json()) as ReleaseResponse;
   const version = payload.tag_name?.replace(/^v/, "") ?? "unknown";
   const assets = payload.assets ?? [];
   const asset = pickAsset(assets, process.platform, process.arch);

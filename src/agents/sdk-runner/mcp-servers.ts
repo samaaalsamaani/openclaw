@@ -11,6 +11,8 @@
 
 import type { McpServerConfig } from "@anthropic-ai/claude-agent-sdk";
 import { resolveRequiredHomeDir } from "../../infra/home-dir.js";
+import { fetchWithSsrFGuard } from "../../infra/net/fetch-guard.js";
+import { SsrFBlockedError } from "../../infra/net/ssrf.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { retryWithBackoff } from "../retry-logic.js";
 import { callWithTimeout, MCP_TIMEOUT_MS } from "../timeout-enforcement.js";
@@ -503,16 +505,23 @@ async function getQueryEmbedding(text: string): Promise<Buffer | null> {
   if (!text || text.trim().length === 0) {
     return null;
   }
+  let embeddingRelease: (() => Promise<void>) | null = null;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch(`${EMBEDDING_SERVER}/v1/embeddings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ input: text, task_type: "search_query" }),
-      signal: controller.signal,
+    const guardResult = await fetchWithSsrFGuard({
+      url: `${EMBEDDING_SERVER}/v1/embeddings`,
+      init: {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: text, task_type: "search_query" }),
+        signal: controller.signal,
+      },
+      auditContext: "mcp-embedding-probe",
     });
     clearTimeout(timeout);
+    embeddingRelease = guardResult.release;
+    const response = guardResult.response;
     if (!response.ok) {
       return null;
     }
@@ -524,8 +533,15 @@ async function getQueryEmbedding(text: string): Promise<Buffer | null> {
       return null;
     }
     return Buffer.from(new Float32Array(embedding).buffer);
-  } catch {
+  } catch (error) {
+    if (error instanceof SsrFBlockedError) {
+      throw error;
+    }
     return null;
+  } finally {
+    if (embeddingRelease) {
+      await embeddingRelease();
+    }
   }
 }
 

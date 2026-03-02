@@ -12,6 +12,8 @@
  */
 
 import type { ModelApi, ModelDefinitionConfig } from "../config/types.js";
+import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
+import { SsrFBlockedError } from "../infra/net/ssrf.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 
 const log = createSubsystemLogger("opencode-zen-models");
@@ -274,6 +276,7 @@ export async function fetchOpencodeZenModels(apiKey?: string): Promise<ModelDefi
     return cachedModels;
   }
 
+  let zenRelease: (() => Promise<void>) | null = null;
   try {
     const headers: Record<string, string> = {
       Accept: "application/json",
@@ -282,11 +285,17 @@ export async function fetchOpencodeZenModels(apiKey?: string): Promise<ModelDefi
       headers.Authorization = `Bearer ${apiKey}`;
     }
 
-    const response = await fetch(`${OPENCODE_ZEN_API_BASE_URL}/models`, {
-      method: "GET",
-      headers,
-      signal: AbortSignal.timeout(10000), // 10 second timeout
+    const guardResult = await fetchWithSsrFGuard({
+      url: `${OPENCODE_ZEN_API_BASE_URL}/models`,
+      init: {
+        method: "GET",
+        headers,
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      },
+      auditContext: "opencode-zen",
     });
+    zenRelease = guardResult.release;
+    const response = guardResult.response;
 
     if (!response.ok) {
       throw new Error(`API returned ${response.status}: ${response.statusText}`);
@@ -305,8 +314,15 @@ export async function fetchOpencodeZenModels(apiKey?: string): Promise<ModelDefi
 
     return models;
   } catch (error) {
+    if (error instanceof SsrFBlockedError) {
+      throw error;
+    }
     log.warn(`Failed to fetch models, using static fallback: ${String(error)}`);
     return getOpencodeZenStaticFallbackModels();
+  } finally {
+    if (zenRelease) {
+      await zenRelease();
+    }
   }
 }
 

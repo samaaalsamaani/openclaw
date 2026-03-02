@@ -1,6 +1,8 @@
 import { Type } from "@sinclair/typebox";
 import { formatCliCommand } from "../../cli/command-format.js";
 import type { OpenClawConfig } from "../../config/config.js";
+import { fetchWithSsrFGuard } from "../../infra/net/fetch-guard.js";
+import { SsrFBlockedError } from "../../infra/net/ssrf.js";
 import { defaultRuntime } from "../../runtime.js";
 import { wrapWebContent } from "../../security/external-content.js";
 import { normalizeSecretInput } from "../../utils/normalize-secret-input.js";
@@ -678,17 +680,31 @@ const REDIRECT_TIMEOUT_MS = 5000;
 /**
  * Resolve a redirect URL to its final destination using a HEAD request.
  * Returns the original URL if resolution fails or times out.
+ * Uses fetchWithSsrFGuard — redirect URLs come from external search results (SSRF risk).
  */
 async function resolveRedirectUrl(url: string): Promise<string> {
+  let redirectRelease: (() => Promise<void>) | null = null;
   try {
-    const res = await fetch(url, {
-      method: "HEAD",
-      redirect: "follow",
-      signal: withTimeout(undefined, REDIRECT_TIMEOUT_MS),
+    const guardResult = await fetchWithSsrFGuard({
+      url,
+      init: {
+        method: "HEAD",
+        signal: withTimeout(undefined, REDIRECT_TIMEOUT_MS),
+      },
+      auditContext: "web-search-redirect",
     });
-    return res.url || url;
-  } catch {
+    redirectRelease = guardResult.release;
+    return guardResult.finalUrl || url;
+  } catch (error) {
+    if (error instanceof SsrFBlockedError) {
+      // Blocked — return original URL rather than crashing search results
+      return url;
+    }
     return url;
+  } finally {
+    if (redirectRelease) {
+      await redirectRelease();
+    }
   }
 }
 

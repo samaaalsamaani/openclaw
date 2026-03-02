@@ -2,6 +2,8 @@ import fs from "node:fs/promises";
 import notifier from "node-notifier";
 import { loadAuthProfileStore } from "../agents/auth-profiles/store.js";
 import type { AuthProfileStore, OAuthCredential } from "../agents/auth-profiles/types.js";
+import { fetchWithSsrFGuard } from "./net/fetch-guard.js";
+import { SsrFBlockedError } from "./net/ssrf.js";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -123,24 +125,43 @@ export async function refreshOAuthToken(cred: OAuthCredential): Promise<{
     ...(cred.clientId ? { client_id: cred.clientId } : {}),
   });
 
-  const response = await fetch(tokenEndpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: body.toString(),
-  });
+  let credRelease: (() => Promise<void>) | null = null;
+  let data: { access_token: string; expires_in?: number; refresh_token?: string };
+  try {
+    const guardResult = await fetchWithSsrFGuard({
+      url: tokenEndpoint,
+      init: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: body.toString(),
+      },
+      auditContext: "credential-monitor",
+    });
+    credRelease = guardResult.release;
+    const response = guardResult.response;
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OAuth refresh failed (${response.status}): ${errorText.slice(0, 200)}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OAuth refresh failed (${response.status}): ${errorText.slice(0, 200)}`);
+    }
+
+    data = (await response.json()) as {
+      access_token: string;
+      expires_in?: number;
+      refresh_token?: string;
+    };
+  } catch (error) {
+    if (error instanceof SsrFBlockedError) {
+      throw error;
+    }
+    throw error;
+  } finally {
+    if (credRelease) {
+      await credRelease();
+    }
   }
-
-  const data = (await response.json()) as {
-    access_token: string;
-    expires_in?: number;
-    refresh_token?: string;
-  };
 
   if (!data.access_token) {
     throw new Error("OAuth refresh response missing access_token");
