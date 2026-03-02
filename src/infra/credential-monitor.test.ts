@@ -28,6 +28,11 @@ vi.mock("node:fs/promises", () => ({
   },
 }));
 
+// Mock fetch-guard for SSRF guard verification tests
+vi.mock("./net/fetch-guard.js", () => ({
+  fetchWithSsrFGuard: vi.fn(),
+}));
+
 describe("credential-monitor", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -105,13 +110,13 @@ describe("credential-monitor", () => {
     it("calls sendManualRenewalNotification when refresh token is missing", async () => {
       const notifier = (await import("node-notifier")).default;
 
-      const cred: OAuthCredential = {
+      const cred = {
         type: "oauth",
         provider: "codex",
         access: "test-access",
         expires: Date.now(),
-        // No refresh token
-      };
+        // No refresh token — intentional for this test case
+      } as unknown as OAuthCredential;
 
       const store: AuthProfileStore = { version: 1, profiles: {} };
 
@@ -142,10 +147,16 @@ describe("credential-monitor", () => {
     });
 
     it("throws error on HTTP error response", async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 400,
-        text: async () => "invalid_grant",
+      const { fetchWithSsrFGuard } = await import("./net/fetch-guard.js");
+      const mockRelease = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(fetchWithSsrFGuard).mockResolvedValue({
+        response: {
+          ok: false,
+          status: 400,
+          text: async () => "invalid_grant",
+        } as unknown as Response,
+        finalUrl: "https://auth.codex.com/oauth/token",
+        release: mockRelease,
       });
 
       const cred: OAuthCredential = {
@@ -160,9 +171,15 @@ describe("credential-monitor", () => {
     });
 
     it("throws error when response missing access_token", async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({}), // Missing access_token
+      const { fetchWithSsrFGuard } = await import("./net/fetch-guard.js");
+      const mockRelease = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(fetchWithSsrFGuard).mockResolvedValue({
+        response: {
+          ok: true,
+          json: async () => ({}), // Missing access_token
+        } as unknown as Response,
+        finalUrl: "https://auth.codex.com/oauth/token",
+        release: mockRelease,
       });
 
       const cred: OAuthCredential = {
@@ -215,6 +232,80 @@ describe("credential-monitor", () => {
         sound: true,
         open: "https://docs.paios.ai/auth/codex",
       });
+    });
+  });
+
+  describe("OAuth token refresh uses fetchWithSsrFGuard", () => {
+    it("routes OAuth token refresh through fetchWithSsrFGuard instead of bare fetch", async () => {
+      const { fetchWithSsrFGuard } = await import("./net/fetch-guard.js");
+      const mockRelease = vi.fn().mockResolvedValue(undefined);
+
+      vi.mocked(fetchWithSsrFGuard).mockResolvedValue({
+        response: {
+          ok: true,
+          json: async () => ({
+            access_token: "new-access-token-123",
+            expires_in: 3600,
+            refresh_token: "new-refresh-token-456",
+          }),
+        } as unknown as Response,
+        finalUrl: "https://auth.codex.com/oauth/token",
+        release: mockRelease,
+      });
+
+      const cred: OAuthCredential = {
+        type: "oauth",
+        provider: "codex",
+        access: "old-access-token",
+        refresh: "old-refresh-token",
+        expires: Date.now(),
+      };
+
+      const result = await refreshOAuthToken(cred);
+
+      // Verify the guard was called (not bare fetch)
+      expect(vi.mocked(fetchWithSsrFGuard)).toHaveBeenCalledOnce();
+      expect(vi.mocked(fetchWithSsrFGuard)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: "https://auth.codex.com/oauth/token",
+          auditContext: "credential-monitor",
+        }),
+      );
+
+      // Verify release() was called in finally block (no dispatcher leak)
+      expect(mockRelease).toHaveBeenCalledOnce();
+
+      // Verify the result parsed correctly
+      expect(result.access).toBe("new-access-token-123");
+      expect(result.refresh).toBe("new-refresh-token-456");
+    });
+
+    it("calls release() even when response parsing fails", async () => {
+      const { fetchWithSsrFGuard } = await import("./net/fetch-guard.js");
+      const mockRelease = vi.fn().mockResolvedValue(undefined);
+
+      vi.mocked(fetchWithSsrFGuard).mockResolvedValue({
+        response: {
+          ok: false,
+          status: 401,
+          text: async () => "Unauthorized",
+        } as unknown as Response,
+        finalUrl: "https://auth.codex.com/oauth/token",
+        release: mockRelease,
+      });
+
+      const cred: OAuthCredential = {
+        type: "oauth",
+        provider: "codex",
+        access: "old-access",
+        refresh: "old-refresh",
+        expires: Date.now(),
+      };
+
+      await expect(refreshOAuthToken(cred)).rejects.toThrow("OAuth refresh failed (401)");
+
+      // Even on error, release must be called
+      expect(mockRelease).toHaveBeenCalledOnce();
     });
   });
 });

@@ -17,6 +17,8 @@ import {
   loadConfigWithValidationSync,
 } from "./config-validator.js";
 import { resolveRequiredHomeDir } from "./home-dir.js";
+import { fetchWithSsrFGuard } from "./net/fetch-guard.js";
+import { SsrFBlockedError } from "./net/ssrf.js";
 
 const execAsync = promisify(exec);
 
@@ -215,15 +217,22 @@ async function checkApis(): Promise<ApiStatus[]> {
         continue;
       }
 
+      let apiRelease: (() => Promise<void>) | null = null;
       try {
         const start = Date.now();
-        const response = await fetch(endpoint, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${profileData.key ?? "test"}`,
+        const guardResult = await fetchWithSsrFGuard({
+          url: endpoint,
+          init: {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${profileData.key ?? "test"}`,
+            },
+            signal: AbortSignal.timeout(API_TIMEOUT_MS),
           },
-          signal: AbortSignal.timeout(API_TIMEOUT_MS),
+          auditContext: "health-check",
         });
+        apiRelease = guardResult.release;
+        const response = guardResult.response;
         const latency = Date.now() - start;
 
         // 4xx codes (400/401/405) often mean "API is up, just auth/method issues"
@@ -237,11 +246,23 @@ async function checkApis(): Promise<ApiStatus[]> {
           latency_ms: latency,
         });
       } catch (err) {
-        statuses.push({
-          name: provider,
-          available: false,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        if (err instanceof SsrFBlockedError) {
+          statuses.push({
+            name: provider,
+            available: false,
+            error: `SSRF blocked: ${err.message}`,
+          });
+        } else {
+          statuses.push({
+            name: provider,
+            available: false,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      } finally {
+        if (apiRelease) {
+          await apiRelease();
+        }
       }
     }
   } catch (err) {

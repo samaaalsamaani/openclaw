@@ -3,7 +3,6 @@ import notifier from "node-notifier";
 import { loadAuthProfileStore } from "../agents/auth-profiles/store.js";
 import type { AuthProfileStore, OAuthCredential } from "../agents/auth-profiles/types.js";
 import { fetchWithSsrFGuard } from "./net/fetch-guard.js";
-import { SsrFBlockedError } from "./net/ssrf.js";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -152,11 +151,6 @@ export async function refreshOAuthToken(cred: OAuthCredential): Promise<{
       expires_in?: number;
       refresh_token?: string;
     };
-  } catch (error) {
-    if (error instanceof SsrFBlockedError) {
-      throw error;
-    }
-    throw error;
   } finally {
     if (credRelease) {
       await credRelease();

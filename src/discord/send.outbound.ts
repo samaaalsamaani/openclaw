@@ -8,7 +8,6 @@ import { loadConfig } from "../config/config.js";
 import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
 import { recordChannelActivity } from "../infra/channel-activity.js";
 import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
-import { SsrFBlockedError } from "../infra/net/ssrf.js";
 import type { RetryConfig } from "../infra/retry.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
 import { convertMarkdownTables } from "../markdown/tables.js";
@@ -385,11 +384,6 @@ export async function sendWebhookMessageDiscord(
       id?: string;
       channel_id?: string;
     };
-  } catch (error) {
-    if (error instanceof SsrFBlockedError) {
-      throw error;
-    }
-    throw error;
   } finally {
     if (webhookRelease) {
       await webhookRelease();

@@ -4,7 +4,6 @@ import { updateConfig } from "../commands/models/shared.js";
 import { applyAuthProfileConfig } from "../commands/onboard-auth.js";
 import { logConfigUpdated } from "../config/logging.js";
 import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
-import { SsrFBlockedError } from "../infra/net/ssrf.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { stylePromptTitle } from "../terminal/prompt-style.js";
 
@@ -71,11 +70,6 @@ async function requestDeviceCode(params: { scope: string }): Promise<DeviceCodeR
       throw new Error("GitHub device code response missing fields");
     }
     return json;
-  } catch (error) {
-    if (error instanceof SsrFBlockedError) {
-      throw error;
-    }
-    throw error;
   } finally {
     if (deviceRelease) {
       await deviceRelease();
@@ -137,11 +131,6 @@ async function pollForAccessToken(params: {
         throw new Error("GitHub login cancelled");
       }
       throw new Error(`GitHub device flow error: ${err}`);
-    } catch (error) {
-      if (error instanceof SsrFBlockedError) {
-        throw error;
-      }
-      throw error;
     } finally {
       if (tokenRelease) {
         await tokenRelease();

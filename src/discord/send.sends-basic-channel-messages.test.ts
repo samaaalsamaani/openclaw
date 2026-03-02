@@ -1,5 +1,5 @@
 import { ChannelType, PermissionFlagsBits, Routes } from "discord-api-types/v10";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   deleteMessageDiscord,
   editMessageDiscord,
@@ -12,6 +12,7 @@ import {
   removeReactionDiscord,
   searchMessagesDiscord,
   sendMessageDiscord,
+  sendWebhookMessageDiscord,
   unpinMessageDiscord,
 } from "./send.js";
 import { makeDiscordRest } from "./send.test-harness.js";
@@ -20,6 +21,10 @@ vi.mock("../web/media.js", async () => {
   const { discordWebMediaMockFactory } = await import("./send.test-harness.js");
   return discordWebMediaMockFactory();
 });
+
+vi.mock("../infra/net/fetch-guard.js", () => ({
+  fetchWithSsrFGuard: vi.fn(),
+}));
 
 describe("sendMessageDiscord", () => {
   function expectReplyReference(
@@ -556,5 +561,47 @@ describe("searchMessagesDiscord", () => {
     expect(call?.[0]).toBe(
       "/guilds/g1/messages/search?content=hello&channel_id=c1&channel_id=c2&author_id=u1&limit=25",
     );
+  });
+});
+
+describe("sendWebhookMessageDiscord — SSRF guard", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("routes webhook POST through fetchWithSsrFGuard instead of bare fetch", async () => {
+    const { fetchWithSsrFGuard } = await import("../infra/net/fetch-guard.js");
+    const mockRelease = vi.fn().mockResolvedValue(undefined);
+
+    vi.mocked(fetchWithSsrFGuard).mockResolvedValue({
+      response: new Response(JSON.stringify({ id: "msg-42", channel_id: "ch-1" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+      finalUrl: "https://discord.com/api/v10/webhooks/wh-1/tok-1?wait=true",
+      release: mockRelease,
+    });
+
+    const result = await sendWebhookMessageDiscord("hello from guard test", {
+      webhookId: "wh-1",
+      webhookToken: "tok-1",
+    });
+
+    // Guard must have been called (not bare fetch)
+    expect(vi.mocked(fetchWithSsrFGuard)).toHaveBeenCalledOnce();
+    expect(vi.mocked(fetchWithSsrFGuard)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: expect.stringContaining("webhooks/wh-1/tok-1"),
+        auditContext: "discord-webhook",
+        init: expect.objectContaining({
+          method: "POST",
+        }),
+      }),
+    );
+
+    // release() must be called in finally (no dispatcher leak)
+    expect(mockRelease).toHaveBeenCalledOnce();
+
+    expect(result.messageId).toBe("msg-42");
   });
 });

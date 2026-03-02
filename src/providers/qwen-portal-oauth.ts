@@ -1,7 +1,6 @@
 import type { OAuthCredentials } from "@mariozechner/pi-ai";
 import { formatCliCommand } from "../cli/command-format.js";
 import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
-import { SsrFBlockedError } from "../infra/net/ssrf.js";
 
 const QWEN_OAUTH_BASE_URL = "https://chat.qwen.ai";
 const QWEN_OAUTH_TOKEN_ENDPOINT = `${QWEN_OAUTH_BASE_URL}/api/v1/oauth2/token`;
@@ -52,11 +51,6 @@ export async function refreshQwenPortalCredentials(
       refresh_token?: string;
       expires_in?: number;
     };
-  } catch (error) {
-    if (error instanceof SsrFBlockedError) {
-      throw error;
-    }
-    throw error;
   } finally {
     if (qwenRelease) {
       await qwenRelease();
