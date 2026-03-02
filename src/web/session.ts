@@ -21,6 +21,19 @@ import {
   resolveWebCredsPath,
 } from "./auth-store.js";
 
+// Cache the WA version so all reconnects use the same version the session was
+// negotiated with. Fetching a newer version on each reconnect can trigger 428
+// "Connection Terminated" responses from WhatsApp's server.
+let _cachedWaVersion: [number, number, number] | null = null;
+async function getWaVersion(): Promise<[number, number, number]> {
+  if (_cachedWaVersion) {
+    return _cachedWaVersion;
+  }
+  const { version } = await fetchLatestBaileysVersion();
+  _cachedWaVersion = version;
+  return version;
+}
+
 export {
   getWebAuthAgeMs,
   logoutWeb,
@@ -104,7 +117,7 @@ export async function createWaSocket(
   const sessionLogger = getChildLogger({ module: "web-session" });
   maybeRestoreCredsFromBackup(authDir);
   const { state, saveCreds } = await useMultiFileAuthState(authDir);
-  const { version } = await fetchLatestBaileysVersion();
+  const version = await getWaVersion();
   const sock = makeWASocket({
     auth: {
       creds: state.creds,
