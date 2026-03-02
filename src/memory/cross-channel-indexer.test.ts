@@ -506,5 +506,18 @@ describe("cross-channel-indexer", () => {
       const results = indexer.search({ query: "!!!", excludeChannel: "" });
       expect(results).toEqual([]);
     });
+
+    it("start() interval is unref'd so it does not keep Node process alive", () => {
+      // start() should call .unref?.() on the interval so tests and short-lived processes exit cleanly.
+      // Node's setInterval returns a Timeout object; after .unref() the hasRef() method returns false.
+      indexer.start();
+
+      // Access the private interval via type cast to verify unref was called
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const interval = (indexer as any)._interval as ReturnType<typeof setInterval> | null;
+      expect(interval).not.toBeNull();
+      // hasRef() returns false after .unref() is called
+      expect((interval as { hasRef?: () => boolean }).hasRef?.()).toBe(false);
+    });
   });
 });

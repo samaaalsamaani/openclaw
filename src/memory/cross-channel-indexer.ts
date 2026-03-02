@@ -155,6 +155,7 @@ export class CrossChannelIndexer {
       },
       5 * 60 * 1000,
     );
+    this._interval.unref?.();
     void this.sync();
   }
 
