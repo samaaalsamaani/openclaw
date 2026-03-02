@@ -105,11 +105,13 @@ Plans:
 4. Adding or removing a channel from config causes the memory index to update without manual intervention
 5. Existing per-channel memory behavior is unchanged for users with only one channel connected
 
+**Plans:** 3 plans
+
 Plans:
 
-- [ ] 23-01: Cross-channel session indexing — all channel sessions feed unified memory store
-- [ ] 23-02: Cross-channel context injection — agent retrieves context regardless of origin channel
-- [ ] 23-03: Reply attribution signal — visible indicator when AI draws on cross-channel history
+- [ ] 23-01-PLAN.md — CrossChannelIndexer singleton: per-agent SQLite index, FTS5 schema, incremental sync, slash-command/cron exclusion, stale purge, obs event
+- [ ] 23-02-PLAN.md — queryCrossChannelContext: FTS5 search with 400ms timeout, same-channel exclusion, extraSystemPrompt injection in get-reply-run.ts
+- [ ] 23-03-PLAN.md — Attribution footer: buildAttributionFooter, appended to reply text when cross-channel sources were used
 
 ---
 
