@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Consumer Foundation
 status: in-progress
-last_updated: "2026-03-02T02:19:50Z"
+last_updated: "2026-03-02T17:00:00Z"
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 0
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 ## Current Position
 
-Phase 22 in progress. Completed plans 22-01 and 22-02.
+**Phase 22 COMPLETE** (all 3 plans done: 22-01 SSRF, 22-02 peerDeps, 22-03 HOME).
 
-Resume with Phase 22 next plan.
+Resume with Phase 23 (cross-channel-memory).
 
 ## Phase Map
 
@@ -98,4 +98,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Completed 22-02-PLAN.md (extension peerDependencies + better-sqlite3 verification)
+Stopped at: Phase 22 fully complete (22-01 SSRF guards, 22-02 peerDeps, 22-03 HOME → resolveRequiredHomeDir).
+Also: graph dedup chapter complete — Belief (326→71), Decision (2851→2845), Signal (63→5) nodes.
+Next: Phase 23 — cross-channel-memory (session indexing + context injection).
