@@ -569,7 +569,7 @@ export async function runPreparedReply(
         // Apply to last non-empty text payload in array
         const lastTextIdx = [...replyResult]
           .toReversed()
-          .findIndex((r) => typeof r.text === "string" && r.text.length > 0);
+          .findIndex((r) => !r.isError && typeof r.text === "string" && r.text.length > 0);
         if (lastTextIdx !== -1) {
           const idx = replyResult.length - 1 - lastTextIdx;
           replyResult[idx] = { ...replyResult[idx], text: (replyResult[idx].text ?? "") + footer };
