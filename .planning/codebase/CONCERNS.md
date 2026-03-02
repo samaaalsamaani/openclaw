@@ -4,12 +4,13 @@
 
 ## Tech Debt
 
-**`better-sqlite3` in devDependencies but used in production code:**
+**`better-sqlite3` placement — RESOLVED (verified 2026-03-02, Phase 22):**
 
-- Issue: `better-sqlite3` is a native module listed only under `devDependencies` in `package.json` (line 210), but is dynamically `require()`-d in production runtime code. This works at dev time but will fail in production environments where devDependencies are not installed.
-- Files: `src/infra/db-init.ts`, `src/infra/crash-logger.ts`, `src/agents/sdk-runner/mcp-servers.ts`, `src/agents/conversation-learner.ts`, `src/agents/retry-logic.ts`, `src/agents/timeout-enforcement.ts`, `src/plugins/hook-executor.ts`
-- Impact: Production crash if `devDependencies` are pruned. The CLAUDE.md note says `better-sqlite3` must be `external` in `tsdown.config.ts` (native module), but the dep placement is wrong.
-- Fix approach: Move `better-sqlite3` from `devDependencies` to `dependencies`, or confirm the package is always installed at runtime via a separate mechanism.
+- Status: This concern is **closed**. `better-sqlite3` is confirmed in root `dependencies` (not `devDependencies`) at line 165 of `package.json` as `"better-sqlite3": "^12.6.2"`. The prior analysis was written from a stale planning-doc state.
+- Verification: `node -e "require('better-sqlite3')"` passes. `grep '"better-sqlite3"' package.json` returns exactly 1 match (in `dependencies`). No sub-package carries a duplicate dep.
+- `tsdown.config.ts` has `external: ["better-sqlite3"]` at lines 108 and 116 — correct for a native module.
+- OBS-07 health dashboard: The "blocked by better-sqlite3 bundling in tsdown" concern is **unblocked** — the existing `external: ["better-sqlite3"]` setting in `tsdown.config.ts` already handles bundling correctly. No code change is needed.
+- Note: "Verified in Phase 22. CONCERNS.md was written from a prior state. No code change required."
 
 **28 extensions declare `openclaw: workspace:*` in `dependencies` (not `devDependencies`/`peerDependencies`):**
 
