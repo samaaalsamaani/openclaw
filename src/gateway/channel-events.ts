@@ -13,13 +13,15 @@ import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
+import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { requireNodeSqlite } from "../memory/sqlite.js";
 
 const log = createSubsystemLogger("channel/events");
 
-const DB_DIR = join(process.env.HOME ?? "/tmp", ".openclaw");
-const DB_PATH = join(DB_DIR, "observability.sqlite");
+function getDbDir(): string {
+  return join(resolveRequiredHomeDir(), ".openclaw");
+}
 
 let db: DatabaseSync | null = null;
 let initFailed = false;
@@ -38,10 +40,11 @@ function getDb(): DatabaseSync | null {
 
   try {
     const { DatabaseSync } = requireNodeSqlite();
-    if (!existsSync(DB_DIR)) {
-      mkdirSync(DB_DIR, { recursive: true });
+    const dbDir = getDbDir();
+    if (!existsSync(dbDir)) {
+      mkdirSync(dbDir, { recursive: true });
     }
-    db = new DatabaseSync(DB_PATH);
+    db = new DatabaseSync(join(dbDir, "observability.sqlite"));
     db.exec("PRAGMA journal_mode = WAL");
     db.exec("PRAGMA busy_timeout = 5000");
     return db;

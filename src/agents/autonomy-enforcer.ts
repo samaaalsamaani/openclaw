@@ -19,15 +19,23 @@ import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
+import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { requireNodeSqlite } from "../memory/sqlite.js";
 
 const log = createSubsystemLogger("agent/autonomy");
 
-const HOME = process.env.HOME ?? "/tmp";
-const OPENCLAW_DIR = join(HOME, ".openclaw");
-const AUTONOMY_DB_PATH = join(OPENCLAW_DIR, "autonomy.sqlite");
-const OBSERVABILITY_DB_PATH = join(OPENCLAW_DIR, "observability.sqlite");
+function getOpenClawDir(): string {
+  return join(resolveRequiredHomeDir(), ".openclaw");
+}
+
+function getAutonomyDbPath(): string {
+  return join(getOpenClawDir(), "autonomy.sqlite");
+}
+
+function getObservabilityDbPath(): string {
+  return join(getOpenClawDir(), "observability.sqlite");
+}
 
 const PROMOTION_THRESHOLD = 3;
 
@@ -74,10 +82,11 @@ function getAutonomyDb(): DatabaseSync | null {
 
   try {
     const { DatabaseSync } = requireNodeSqlite();
-    if (!existsSync(OPENCLAW_DIR)) {
-      mkdirSync(OPENCLAW_DIR, { recursive: true });
+    const openClawDir = getOpenClawDir();
+    if (!existsSync(openClawDir)) {
+      mkdirSync(openClawDir, { recursive: true });
     }
-    autonomyDb = new DatabaseSync(AUTONOMY_DB_PATH);
+    autonomyDb = new DatabaseSync(getAutonomyDbPath());
     autonomyDb.exec("PRAGMA journal_mode = WAL");
     autonomyDb.exec("PRAGMA busy_timeout = 5000");
 
@@ -123,10 +132,11 @@ function getObservabilityDb(): DatabaseSync | null {
 
   try {
     const { DatabaseSync } = requireNodeSqlite();
-    if (!existsSync(OPENCLAW_DIR)) {
-      mkdirSync(OPENCLAW_DIR, { recursive: true });
+    const openClawDir = getOpenClawDir();
+    if (!existsSync(openClawDir)) {
+      mkdirSync(openClawDir, { recursive: true });
     }
-    observabilityDb = new DatabaseSync(OBSERVABILITY_DB_PATH);
+    observabilityDb = new DatabaseSync(getObservabilityDbPath());
     observabilityDb.exec("PRAGMA journal_mode = WAL");
     observabilityDb.exec("PRAGMA busy_timeout = 5000");
     return observabilityDb;

@@ -12,6 +12,7 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { loadConfig } from "../config/config.js";
 import { emitAgentEvent } from "../infra/agent-events.js";
+import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runCliAgent } from "./cli-runner.js";
 import { mergeSubTaskResults } from "./compound-merger.js";
@@ -68,10 +69,12 @@ function buildSubTaskPrompt(domain: TaskDomain, originalPrompt: string): string 
 
 // ── Handoffs database (node:sqlite) ─────────────────────────────────
 
-const OBS_DB_PATH = path.join(process.env.HOME ?? "/tmp", ".openclaw", "observability.sqlite");
+function getObsDbPath(): string {
+  return path.join(resolveRequiredHomeDir(), ".openclaw", "observability.sqlite");
+}
 
 function getDb(): DatabaseSync {
-  const db = new DatabaseSync(OBS_DB_PATH);
+  const db = new DatabaseSync(getObsDbPath());
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 5000");
   return db;
@@ -169,7 +172,7 @@ async function executeSubTask(
 
 function emitObsEvent(action: string, traceId: string, metadata: Record<string, unknown>): void {
   const eventsJs = path.join(
-    process.env.HOME ?? "/tmp",
+    resolveRequiredHomeDir(),
     ".openclaw/projects/observability/events.js",
   );
   execFile(
