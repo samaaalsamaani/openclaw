@@ -52,7 +52,7 @@ export type MatrixMonitorHandlerParams = {
   replyToMode: ReplyToMode;
   threadReplies: "off" | "inbound" | "always";
   dmEnabled: boolean;
-  dmPolicy: "open" | "pairing" | "allowlist" | "disabled";
+  dmPolicy: "open" | "pairing" | "allowlist" | "disabled" | "intake";
   textLimit: number;
   mediaMaxBytes: number;
   startupMs: number;

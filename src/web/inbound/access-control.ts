@@ -18,6 +18,8 @@ export type InboundAccessControlResult = {
   shouldMarkRead: boolean;
   isSelfChat: boolean;
   resolvedAccountId: string;
+  /** True when unknown sender is routed to the intake agent (dmPolicy="intake"). */
+  intakeRoute?: boolean;
 };
 
 const PAIRING_REPLY_HISTORY_GRACE_MS = 30_000;
@@ -200,6 +202,19 @@ export async function checkInboundAccessControl(params: {
                 logVerbose(`whatsapp pairing reply failed for ${candidate}: ${String(err)}`);
               }
             }
+          }
+        } else if (dmPolicy === "intake") {
+          if (suppressPairingReply) {
+            logVerbose(`Skipping intake routing for historical DM from ${candidate}.`);
+          } else {
+            logVerbose(`intake policy: routing unknown sender ${candidate} to intake agent`);
+            return {
+              allowed: true,
+              shouldMarkRead: true,
+              isSelfChat,
+              resolvedAccountId: account.accountId,
+              intakeRoute: true,
+            };
           }
         } else {
           logVerbose(`Blocked unauthorized sender ${candidate} (dmPolicy=${dmPolicy})`);

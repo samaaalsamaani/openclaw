@@ -131,3 +131,88 @@ describe("WhatsApp dmPolicy precedence", () => {
     expect(readAllowFromStoreMock).not.toHaveBeenCalled();
   });
 });
+
+describe("WhatsApp dmPolicy=intake", () => {
+  it("routes unknown sender to intake (allowed=true, intakeRoute=true)", async () => {
+    setAccessControlTestConfig({
+      channels: {
+        whatsapp: {
+          dmPolicy: "intake",
+          allowFrom: [],
+        },
+      },
+    });
+
+    const result = await checkInboundAccessControl({
+      accountId: "default",
+      from: "+15550001111",
+      selfE164: "+15550009999",
+      senderE164: "+15550001111",
+      group: false,
+      pushName: "Stranger",
+      isFromMe: false,
+      sock: { sendMessage: sendMessageMock },
+      remoteJid: "15550001111@s.whatsapp.net",
+    });
+
+    expect(result.allowed).toBe(true);
+    expect(result.intakeRoute).toBe(true);
+    expect(sendMessageMock).not.toHaveBeenCalled();
+    expect(upsertPairingRequestMock).not.toHaveBeenCalled();
+  });
+
+  it("allows known sender (in allowFrom) normally with no intakeRoute", async () => {
+    setAccessControlTestConfig({
+      channels: {
+        whatsapp: {
+          dmPolicy: "intake",
+          allowFrom: ["+15550001111"],
+        },
+      },
+    });
+
+    const result = await checkInboundAccessControl({
+      accountId: "default",
+      from: "+15550001111",
+      selfE164: "+15550009999",
+      senderE164: "+15550001111",
+      group: false,
+      isFromMe: false,
+      sock: { sendMessage: sendMessageMock },
+      remoteJid: "15550001111@s.whatsapp.net",
+    });
+
+    expect(result.allowed).toBe(true);
+    expect(result.intakeRoute).toBeUndefined();
+  });
+
+  it("suppresses intake route for historical DMs (old timestamp)", async () => {
+    setAccessControlTestConfig({
+      channels: {
+        whatsapp: {
+          dmPolicy: "intake",
+          allowFrom: [],
+        },
+      },
+    });
+
+    const connectedAtMs = 1_000_000;
+    const result = await checkInboundAccessControl({
+      accountId: "default",
+      from: "+15550001111",
+      selfE164: "+15550009999",
+      senderE164: "+15550001111",
+      group: false,
+      isFromMe: false,
+      messageTimestampMs: connectedAtMs - 31_000,
+      connectedAtMs,
+      pairingGraceMs: 30_000,
+      sock: { sendMessage: sendMessageMock },
+      remoteJid: "15550001111@s.whatsapp.net",
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.intakeRoute).toBeUndefined();
+    expect(sendMessageMock).not.toHaveBeenCalled();
+  });
+});

@@ -34,6 +34,8 @@ export async function monitorWebInbox(options: {
   debounceMs?: number;
   /** Optional debounce gating predicate. */
   shouldDebounce?: (msg: WebInboundMessage) => boolean;
+  /** Agent ID to route unknown senders to when dmPolicy="intake". */
+  intakeAgentId?: string;
 }) {
   const inboundLogger = getChildLogger({ module: "web-inbound" });
   const inboundConsoleLog = createSubsystemLogger("gateway/channels/whatsapp").child("inbound");
@@ -330,6 +332,7 @@ export async function monitorWebInbox(options: {
         mediaPath,
         mediaType,
         mediaFileName,
+        ...(access.intakeRoute ? { forcedAgentId: options.intakeAgentId ?? "intake" } : {}),
       };
       try {
         const task = Promise.resolve(debouncer.enqueue(inboundMessage));

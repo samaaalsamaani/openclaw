@@ -3,7 +3,11 @@ import type { MsgContext } from "../../../auto-reply/templating.js";
 import { loadConfig } from "../../../config/config.js";
 import { logVerbose } from "../../../globals.js";
 import { resolveAgentRoute } from "../../../routing/resolve-route.js";
-import { buildGroupHistoryKey } from "../../../routing/session-key.js";
+import {
+  buildAgentMainSessionKey,
+  buildAgentPeerSessionKey,
+  buildGroupHistoryKey,
+} from "../../../routing/session-key.js";
 import { normalizeE164 } from "../../../utils.js";
 import type { MentionConfig } from "../mentions.js";
 import type { WebInboundMsg } from "../types.js";
@@ -64,7 +68,7 @@ export function createWebOnMessageHandler(params: {
     const conversationId = msg.conversationId ?? msg.from;
     const peerId = resolvePeerId(msg);
     // Fresh config for bindings lookup; other routing inputs are payload-derived.
-    const route = resolveAgentRoute({
+    const baseRoute = resolveAgentRoute({
       cfg: loadConfig(),
       channel: "whatsapp",
       accountId: msg.accountId,
@@ -73,6 +77,23 @@ export function createWebOnMessageHandler(params: {
         id: peerId,
       },
     });
+    // Override routing for intake-flagged unknown senders.
+    const route = msg.forcedAgentId
+      ? {
+          ...baseRoute,
+          agentId: msg.forcedAgentId,
+          sessionKey: buildAgentPeerSessionKey({
+            agentId: msg.forcedAgentId,
+            channel: "whatsapp",
+            accountId: baseRoute.accountId,
+            peerKind: "direct",
+            peerId,
+            dmScope: "per-channel-peer",
+          }),
+          mainSessionKey: buildAgentMainSessionKey({ agentId: msg.forcedAgentId }),
+          matchedBy: "binding.channel" as const,
+        }
+      : baseRoute;
     const groupHistoryKey =
       msg.chatType === "group"
         ? buildGroupHistoryKey({

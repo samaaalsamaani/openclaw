@@ -54,6 +54,7 @@ const WhatsAppSharedSchema = z.object({
   groups: WhatsAppGroupsSchema,
   ackReaction: WhatsAppAckReactionSchema,
   debounceMs: z.number().int().nonnegative().optional().default(0),
+  intakeAgentId: z.string().optional(),
   heartbeat: ChannelHeartbeatVisibilitySchema,
 });
 

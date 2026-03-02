@@ -28,6 +28,7 @@ import { recordInboundSession } from "../../channels/session.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { resolveMarkdownTableMode } from "../../config/markdown-tables.js";
 import { readSessionUpdatedAt, resolveStorePath } from "../../config/sessions.js";
+import type { DmPolicy } from "../../config/types.base.js";
 import type { DiscordAccountConfig } from "../../config/types.discord.js";
 import { logVerbose } from "../../globals.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
@@ -383,7 +384,7 @@ export type AgentComponentContext = {
   /** DM allowlist (from allowFrom config; legacy: dm.allowFrom) */
   allowFrom?: string[];
   /** DM policy (default: "pairing") */
-  dmPolicy?: "open" | "pairing" | "allowlist" | "disabled";
+  dmPolicy?: DmPolicy;
 };
 
 /**

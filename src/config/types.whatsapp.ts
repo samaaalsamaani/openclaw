@@ -74,6 +74,8 @@ type WhatsAppSharedConfig = {
   ackReaction?: WhatsAppAckReactionConfig;
   /** Debounce window (ms) for batching rapid consecutive messages from the same sender (0 to disable). */
   debounceMs?: number;
+  /** Agent ID to route unknown senders to when dmPolicy="intake". */
+  intakeAgentId?: string;
   /** Heartbeat visibility settings. */
   heartbeat?: ChannelHeartbeatVisibilityConfig;
 };

@@ -64,7 +64,7 @@ function setZalouserAccountScopedConfig(
 
 function setZalouserDmPolicy(
   cfg: OpenClawConfig,
-  dmPolicy: "pairing" | "allowlist" | "open" | "disabled",
+  dmPolicy: "pairing" | "allowlist" | "open" | "disabled" | "intake",
 ): OpenClawConfig {
   const allowFrom =
     dmPolicy === "open" ? addWildcardAllowFrom(cfg.channels?.zalouser?.allowFrom) : undefined;

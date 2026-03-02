@@ -19,7 +19,7 @@ type UpdateMode = "polling" | "webhook";
 
 function setZaloDmPolicy(
   cfg: OpenClawConfig,
-  dmPolicy: "pairing" | "allowlist" | "open" | "disabled",
+  dmPolicy: "pairing" | "allowlist" | "open" | "disabled" | "intake",
 ) {
   const allowFrom =
     dmPolicy === "open" ? addWildcardAllowFrom(cfg.channels?.zalo?.allowFrom) : undefined;

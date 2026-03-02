@@ -40,4 +40,6 @@ export type WebInboundMessage = {
   mediaFileName?: string;
   mediaUrl?: string;
   wasMentioned?: boolean;
+  /** Overrides normal agent routing. Set when dmPolicy="intake" for unknown senders. */
+  forcedAgentId?: string;
 };
