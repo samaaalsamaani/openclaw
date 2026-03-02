@@ -8,11 +8,13 @@ A unified Personal AI Operating System connecting three free, world-class AI bra
 
 **The mesh**: Three AI brains, one protocol (MCP), shared memory (KB), unified routing — so the right brain handles every task automatically, and knowledge compounds across all interactions.
 
-## Current Milestone: v4.0 — TBD
+## Current Milestone: v4.0 — Consumer Foundation
 
-**Status:** Planning — run `/gsd:new-milestone` to define requirements and roadmap
+**Status:** Roadmap defined — run `/gsd:plan-phase 22` to start execution
 
 **v3.0 shipped 2026-03-01** — System Reliability & Hardening complete. Core stabilization done. See `.planning/MILESTONES.md` for what shipped and known gaps.
+
+**v4.0 vision:** Ship OpenClaw as the AI OS for Communication — the only AI present inside every messaging platform users already use, that knows them across channels, acts proactively, and compounds in value the longer it runs. 7 phases covering: platform foundations → cross-channel memory → onboarding → proactive AI → consumer billing → macOS polish → developer platform groundwork. Full vision in `docs/plans/2026-03-02-platform-vision.md`.
 
 ## Requirements
 
