@@ -14,6 +14,7 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   getConfidenceThreshold,
@@ -642,7 +643,7 @@ function applyRoutingWeights(): void {
 
   // Layer 2: Override with routing-weights.json (optimize.js output takes precedence)
   try {
-    const weightsPath = join(process.env.HOME ?? "/tmp", ".openclaw", "routing-weights.json");
+    const weightsPath = join(resolveRequiredHomeDir(), ".openclaw", "routing-weights.json");
     if (!existsSync(weightsPath)) {
       return;
     }

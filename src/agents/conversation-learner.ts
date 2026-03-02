@@ -9,25 +9,24 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { emitAgentEvent } from "../infra/agent-events.js";
+import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { defaultRuntime } from "../runtime.js";
 import { loadLlmConfig, resolveSubsystem } from "./llm-config-reader.js";
 
-const KB_DB_PATH = join(
-  process.env.HOME ?? "/tmp",
-  ".openclaw",
-  "projects",
-  "knowledge-base",
-  "kb.sqlite",
-);
+function getKbDbPath(): string {
+  return join(resolveRequiredHomeDir(), ".openclaw", "projects", "knowledge-base", "kb.sqlite");
+}
 
-const AUTH_PROFILES_PATH = join(
-  process.env.HOME ?? "/tmp",
-  ".openclaw",
-  "agents",
-  "main",
-  "agent",
-  "auth-profiles.json",
-);
+function getAuthProfilesPath(): string {
+  return join(
+    resolveRequiredHomeDir(),
+    ".openclaw",
+    "agents",
+    "main",
+    "agent",
+    "auth-profiles.json",
+  );
+}
 
 const MAX_INSERTS_PER_TURN = 3;
 const MIN_MESSAGE_LENGTH = 20;
@@ -50,7 +49,7 @@ const EXTRACTION_MODEL = getExtractionModel();
 
 function getAnthropicKey(): string | null {
   try {
-    const data = JSON.parse(readFileSync(AUTH_PROFILES_PATH, "utf-8"));
+    const data = JSON.parse(readFileSync(getAuthProfilesPath(), "utf-8"));
     return (data.profiles?.anthropic?.key as string) || process.env.ANTHROPIC_API_KEY || null;
   } catch {
     return process.env.ANTHROPIC_API_KEY || null;
@@ -120,14 +119,14 @@ Return a JSON array of objects with {title, content, tags} or an empty array [] 
 }
 
 function storeFactsInKb(facts: ExtractedFact[], agentId: string): number {
-  if (!existsSync(KB_DB_PATH)) {
+  if (!existsSync(getKbDbPath())) {
     return 0;
   }
 
   // Dynamic require for better-sqlite3 (same pattern as mcp-servers.ts)
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Database = require("better-sqlite3");
-  const db = new Database(KB_DB_PATH);
+  const db = new Database(getKbDbPath());
   db.pragma("busy_timeout = 5000");
 
   const now = new Date().toISOString();

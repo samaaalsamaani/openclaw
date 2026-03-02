@@ -8,6 +8,7 @@
 import { join } from "node:path";
 import notifier from "node-notifier";
 import { checkSystemHealth } from "./health-check.js";
+import { resolveRequiredHomeDir } from "./home-dir.js";
 
 // ── Type Definitions ──────────────────────────────────────────────────
 
@@ -120,7 +121,7 @@ function logToConsole(alert: AlertMessage): void {
  */
 async function logToObservability(alert: AlertMessage): Promise<void> {
   try {
-    const dbPath = join(process.env.HOME ?? "/tmp", ".openclaw", "observability.sqlite");
+    const dbPath = join(resolveRequiredHomeDir(), ".openclaw", "observability.sqlite");
 
     const { default: Database } = await import("better-sqlite3");
     const db = new Database(dbPath);
@@ -164,7 +165,7 @@ async function logToObservability(alert: AlertMessage): Promise<void> {
  */
 export async function detectIntegrationFailures(): Promise<IntegrationFailure[]> {
   try {
-    const dbPath = join(process.env.HOME ?? "/tmp", ".openclaw", "observability.sqlite");
+    const dbPath = join(resolveRequiredHomeDir(), ".openclaw", "observability.sqlite");
 
     const { default: Database } = await import("better-sqlite3");
     const db = new Database(dbPath, { readonly: true });

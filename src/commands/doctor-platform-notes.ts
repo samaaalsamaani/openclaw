@@ -1,23 +1,19 @@
 import { execFile } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import type { OpenClawConfig } from "../config/config.js";
+import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { note } from "../terminal/note.js";
 import { shortenHomePath } from "../utils.js";
 
 const execFileAsync = promisify(execFile);
 
-function resolveHomeDir(): string {
-  return process.env.HOME ?? os.homedir();
-}
-
 export async function noteMacLaunchAgentOverrides() {
   if (process.platform !== "darwin") {
     return;
   }
-  const home = resolveHomeDir();
+  const home = resolveRequiredHomeDir();
   const markerCandidates = [path.join(home, ".openclaw", "disable-launchagent")];
   const markerPath = markerCandidates.find((candidate) => fs.existsSync(candidate));
   if (!markerPath) {

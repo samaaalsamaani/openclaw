@@ -10,6 +10,7 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { loadConfig } from "../config/config.js";
 import { emitAgentEvent } from "../infra/agent-events.js";
+import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runCliAgent } from "./cli-runner.js";
 import { loadLlmConfig, resolveRoutingVerifier } from "./llm-config-reader.js";
@@ -194,7 +195,7 @@ export async function executeVerification(req: VerificationRequest): Promise<Ver
   // Persist routing event + score to observability SQLite for optimize.js
   // optimize.js joins events (category=routing) with scores on trace_id
   const eventsJs = path.join(
-    process.env.HOME ?? "/tmp",
+    resolveRequiredHomeDir(),
     ".openclaw/projects/observability/events.js",
   );
   const metadata = JSON.stringify({

@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { Command, Option } from "commander";
 import { resolveStateDir } from "../config/paths.js";
+import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { routeLogsToStderr } from "../logging/console.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
@@ -161,7 +162,7 @@ function updateCompletionProfile(
 }
 
 function getShellProfilePath(shell: CompletionShell): string {
-  const home = process.env.HOME || os.homedir();
+  const home = resolveRequiredHomeDir();
   if (shell === "zsh") {
     return path.join(home, ".zshrc");
   }
@@ -301,7 +302,7 @@ export function registerCompletionCli(program: Command) {
 }
 
 export async function installCompletion(shell: string, yes: boolean, binName = "openclaw") {
-  const home = process.env.HOME || os.homedir();
+  const home = resolveRequiredHomeDir();
   let profilePath = "";
   let sourceLine = "";
 

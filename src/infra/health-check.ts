@@ -16,6 +16,7 @@ import {
   OpenClawConfigSchema,
   loadConfigWithValidationSync,
 } from "./config-validator.js";
+import { resolveRequiredHomeDir } from "./home-dir.js";
 
 const execAsync = promisify(exec);
 
@@ -187,7 +188,7 @@ async function checkApis(): Promise<ApiStatus[]> {
   }
 
   // External APIs from auth-profiles.json
-  const authProfilePath = join(process.env.HOME ?? "/tmp", ".openclaw", "auth-profiles.json");
+  const authProfilePath = join(resolveRequiredHomeDir(), ".openclaw", "auth-profiles.json");
   try {
     const authProfiles = loadConfigWithValidationSync(authProfilePath, AuthProfilesSchema);
 
@@ -263,29 +264,23 @@ async function checkDatabases(): Promise<DatabaseStatus[]> {
   const databases = [
     {
       name: "observability.sqlite",
-      path: join(process.env.HOME ?? "/tmp", ".openclaw", "observability.sqlite"),
+      path: join(resolveRequiredHomeDir(), ".openclaw", "observability.sqlite"),
     },
     {
       name: "social-history.sqlite",
-      path: join(process.env.HOME ?? "/tmp", ".openclaw", "social-history.sqlite"),
+      path: join(resolveRequiredHomeDir(), ".openclaw", "social-history.sqlite"),
     },
     {
       name: "autonomy.sqlite",
-      path: join(process.env.HOME ?? "/tmp", ".openclaw", "autonomy.sqlite"),
+      path: join(resolveRequiredHomeDir(), ".openclaw", "autonomy.sqlite"),
     },
     {
       name: "memory/main.sqlite",
-      path: join(process.env.HOME ?? "/tmp", ".openclaw", "memory", "main.sqlite"),
+      path: join(resolveRequiredHomeDir(), ".openclaw", "memory", "main.sqlite"),
     },
     {
       name: "projects/knowledge-base/kb.sqlite",
-      path: join(
-        process.env.HOME ?? "/tmp",
-        ".openclaw",
-        "projects",
-        "knowledge-base",
-        "kb.sqlite",
-      ),
+      path: join(resolveRequiredHomeDir(), ".openclaw", "projects", "knowledge-base", "kb.sqlite"),
     },
   ];
 
@@ -361,7 +356,7 @@ async function checkDatabases(): Promise<DatabaseStatus[]> {
 async function checkConfigs(): Promise<ConfigStatus[]> {
   const statuses: ConfigStatus[] = [];
 
-  const openclawDir = join(process.env.HOME ?? "/tmp", ".openclaw");
+  const openclawDir = join(resolveRequiredHomeDir(), ".openclaw");
 
   // LLM config
   try {
@@ -469,7 +464,7 @@ function deriveOverallStatus(
  */
 async function logHealthCheckToObservability(report: HealthReport): Promise<void> {
   try {
-    const dbPath = join(process.env.HOME ?? "/tmp", ".openclaw", "observability.sqlite");
+    const dbPath = join(resolveRequiredHomeDir(), ".openclaw", "observability.sqlite");
 
     const { default: Database } = await import("better-sqlite3");
     const db = new Database(dbPath);

@@ -6,6 +6,7 @@
  */
 
 import path from "node:path";
+import { resolveRequiredHomeDir } from "./home-dir.js";
 
 interface CrashLogParams {
   serviceName: string;
@@ -26,7 +27,7 @@ function getDb() {
     return db;
   }
 
-  const dbPath = path.join(process.env.HOME ?? "/tmp", ".openclaw", "observability.sqlite");
+  const dbPath = path.join(resolveRequiredHomeDir(), ".openclaw", "observability.sqlite");
 
   // Dynamic require for better-sqlite3 (native module pattern)
   // eslint-disable-next-line @typescript-eslint/no-require-imports

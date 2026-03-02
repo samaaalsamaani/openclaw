@@ -10,6 +10,7 @@
  */
 
 import type { McpServerConfig } from "@anthropic-ai/claude-agent-sdk";
+import { resolveRequiredHomeDir } from "../../infra/home-dir.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { retryWithBackoff } from "../retry-logic.js";
 import { callWithTimeout, MCP_TIMEOUT_MS } from "../timeout-enforcement.js";
@@ -416,7 +417,7 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
     };
 
     // Filesystem — secure file operations on allowed paths
-    const home = process.env.HOME ?? "/Users/user";
+    const home = resolveRequiredHomeDir();
     servers["filesystem"] = {
       type: "stdio",
       command: "npx",
@@ -459,7 +460,7 @@ function openKbDb() {
   const fs = require("node:fs");
 
   const DB_PATH = path.join(
-    process.env.HOME ?? "/tmp",
+    resolveRequiredHomeDir(),
     ".openclaw",
     "projects",
     "knowledge-base",

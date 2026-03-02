@@ -8,6 +8,7 @@
 import { statSync } from "node:fs";
 import { join } from "node:path";
 import { checkSystemHealth, type HealthReport } from "./health-check.js";
+import { resolveRequiredHomeDir } from "./home-dir.js";
 
 // ── Type Definitions ──────────────────────────────────────────────────
 
@@ -171,7 +172,7 @@ function formatSize(mb: number): string {
  */
 async function fetchRecentErrors(): Promise<RecentError[]> {
   try {
-    const dbPath = join(process.env.HOME ?? "/tmp", ".openclaw", "observability.sqlite");
+    const dbPath = join(resolveRequiredHomeDir(), ".openclaw", "observability.sqlite");
 
     // Check if database exists
     try {

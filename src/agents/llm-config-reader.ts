@@ -12,6 +12,7 @@
 import { statSync } from "node:fs";
 import { join } from "node:path";
 import { LlmConfigSchema, loadConfigWithValidationSync } from "../infra/config-validator.js";
+import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { normalizeModelRef, type ModelRef } from "./model-selection.js";
 import type { TaskDomain } from "./task-classifier.js";
@@ -123,7 +124,7 @@ function isEnabled(): boolean {
 // ── Config path ───────────────────────────────────────────────────────
 
 function configPath(): string {
-  return join(process.env.HOME ?? "/tmp", ".openclaw", "llm-config.json");
+  return join(resolveRequiredHomeDir(), ".openclaw", "llm-config.json");
 }
 
 // ── Mtime-based cache ─────────────────────────────────────────────────
