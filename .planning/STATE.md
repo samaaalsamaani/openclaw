@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Consumer Foundation
 status: in-progress
-last_updated: "2026-03-02T17:00:00Z"
+last_updated: "2026-03-02T14:50:00Z"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 0
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 ## Current Position
 
-**Phase 22 COMPLETE** (all 3 plans done: 22-01 SSRF, 22-02 peerDeps, 22-03 HOME).
+**Phase 23 in progress** (23-01 COMPLETE: cross-channel memory indexer).
 
-Resume with Phase 23 (cross-channel-memory).
+Resume with Phase 23 Plan 02 (cross-channel context injection).
 
 ## Phase Map
 
@@ -51,6 +51,9 @@ Resume with Phase 23 (cross-channel-memory).
 
 ### Key Decisions Carried Forward
 
+- CrossChannelIndexer singleton via module-level INDEXER_CACHE Map keyed by agentId — prevents duplicate intervals (23-01)
+- FTS5 trigram tokenizer for cross-channel search — no embedding dependency for initial MEM-01/MEM-05 delivery (23-01)
+- Cross-channel index DB at ~/.openclaw/agents/<agentId>/cross-channel-memory.sqlite (agent-level, not workspace) (23-01)
 - Non-singleton database pattern (callers manage connection lifecycle)
 - Permanent errors fail fast (400/401/404); transient errors retry with exponential backoff
 - Session-scoped MCP servers (TCP wrapper needed for true daemon architecture)
@@ -97,7 +100,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-02
-Stopped at: Phase 22 fully complete (22-01 SSRF guards, 22-02 peerDeps, 22-03 HOME → resolveRequiredHomeDir).
-Also: graph dedup chapter complete — Belief (326→71), Decision (2851→2845), Signal (63→5) nodes.
-Next: Phase 23 — cross-channel-memory (session indexing + context injection).
+Last session: 2026-03-02T14:50:00Z
+Stopped at: Completed 23-01-PLAN.md (cross-channel memory indexer — CrossChannelIndexer singleton, FTS5 schema, 14 tests).
+Next: Phase 23 Plan 02 — cross-channel context injection (search integration into agent reply pipeline).

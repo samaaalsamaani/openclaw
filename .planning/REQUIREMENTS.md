@@ -19,11 +19,11 @@
 
 ### Cross-Channel Memory
 
-- [ ] **MEM-01**: Session files from all connected channels feed a shared cross-channel memory index
+- [x] **MEM-01**: Session files from all connected channels feed a shared cross-channel memory index
 - [ ] **MEM-02**: When a user asks a question on any channel, the agent retrieves relevant context from all channels (not just the current one)
 - [ ] **MEM-03**: Replies include a visible signal when the AI is drawing on cross-channel history (e.g. "Based on your Slack conversation last week…")
 - [ ] **MEM-04**: Cross-channel context injection works without degrading response latency by more than 500ms
-- [ ] **MEM-05**: Memory index stays consistent when channels are added or removed
+- [x] **MEM-05**: Memory index stays consistent when channels are added or removed
 
 ### Connect Everything Onboarding
 
@@ -119,11 +119,11 @@ Deferred. Tracked but not in current roadmap.
 | FOUND-03    | Phase 22 | Complete |
 | FOUND-04    | Phase 22 | Pending  |
 | FOUND-05    | Phase 22 | Pending  |
-| MEM-01      | Phase 23 | Pending  |
+| MEM-01      | Phase 23 | Complete |
 | MEM-02      | Phase 23 | Pending  |
 | MEM-03      | Phase 23 | Pending  |
 | MEM-04      | Phase 23 | Pending  |
-| MEM-05      | Phase 23 | Pending  |
+| MEM-05      | Phase 23 | Complete |
 | ONBD-01     | Phase 24 | Pending  |
 | ONBD-02     | Phase 24 | Pending  |
 | ONBD-03     | Phase 24 | Pending  |
