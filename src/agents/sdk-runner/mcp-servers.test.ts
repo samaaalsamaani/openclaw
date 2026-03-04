@@ -2,6 +2,7 @@
  * Tests for MCP server error boundary logic — validates error handling without crashing.
  */
 import { describe, it, expect } from "vitest";
+import { queryKbForContext } from "./mcp-servers.js";
 
 describe("mcp-servers module", () => {
   it("exports buildSdkMcpServers function", async () => {
@@ -29,18 +30,18 @@ describe("mcp-servers module", () => {
 
   it("queryKbForContext returns string or empty on errors", async () => {
     const mcpServers = await import("./mcp-servers.js");
-    const { queryKbForContext } = mcpServers;
+    const { queryKbForContext: qkbCtx } = mcpServers;
 
     // Should return empty string on invalid input (graceful degradation)
-    const result1 = queryKbForContext("");
+    const result1 = await qkbCtx("");
     expect(typeof result1).toBe("string");
 
     // Should handle short queries
-    const result2 = queryKbForContext("ab");
+    const result2 = await qkbCtx("ab");
     expect(typeof result2).toBe("string");
 
-    // Should handle normal queries
-    const result3 = queryKbForContext("test query");
+    // Should handle normal queries (KB may not exist in test env — returns "" on error)
+    const result3 = await qkbCtx("test query");
     expect(typeof result3).toBe("string");
   });
 
@@ -48,6 +49,26 @@ describe("mcp-servers module", () => {
     // This test validates that the error boundary pattern is correctly implemented
     // The actual error handling is tested via integration tests with real tools
     expect(true).toBe(true);
+  });
+
+  describe("queryKbForContext async upgrade", () => {
+    it("queryKbForContext returns a Promise", () => {
+      const result = queryKbForContext("");
+      // After upgrade, must be a Promise
+      expect(result).toBeInstanceOf(Promise);
+    });
+
+    it("queryKbForContext resolves to string for empty query", async () => {
+      const result = await queryKbForContext("");
+      expect(typeof result).toBe("string");
+      expect(result).toBe("");
+    });
+
+    it("queryKbForContext resolves to string for short query", async () => {
+      const result = await queryKbForContext("ab");
+      expect(typeof result).toBe("string");
+      expect(result).toBe("");
+    });
   });
 
   describe("retry and timeout integration", () => {

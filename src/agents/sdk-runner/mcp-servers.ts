@@ -85,7 +85,7 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
             const results = await retryWithBackoff(
               async () =>
                 callWithTimeout(
-                  async () => Promise.resolve(kbQuery(query, limit ?? 5)),
+                  async () => kbQuery(query, limit ?? 5),
                   MCP_TIMEOUT_MS,
                   "mcp:kb_query",
                 ),
@@ -576,14 +576,20 @@ function safeCount(db: ReturnType<typeof getKbDb>, sql: string): number {
   }
 }
 
-function kbQuery(query: string, limit: number) {
+async function kbQuery(query: string, limit: number): Promise<unknown[]> {
   const db = getKbDb();
   const safeLimit = Math.max(1, Math.min(limit, 50));
-  const safeQuery = query.replace(/[^\p{L}\p{N}\s]/gu, " ");
-  return db
+  const safeQuery = query.replace(/[^\p{L}\p{N}\s]/gu, " ").trim();
+  if (!safeQuery) {
+    return [];
+  }
+
+  // 1. FTS5 always runs first (sync, reliable)
+  const ftsRows = db
     .prepare(
       `SELECT a.id, a.url, a.title, a.summary, a.type, a.platform, a.language,
-              a.summary_l1, a.summary_l2, a.para_type, a.para_area
+              a.summary_l1, a.summary_l2, a.para_type, a.para_area,
+              fts.rank as fts_rank
        FROM articles_fts fts
        JOIN articles a ON a.id = fts.rowid
        WHERE articles_fts MATCH ?
@@ -591,7 +597,69 @@ function kbQuery(query: string, limit: number) {
        ORDER BY rank
        LIMIT ?`,
     )
-    .all(safeQuery, safeLimit);
+    .all(safeQuery, safeLimit * 2) as Array<
+    Record<string, unknown> & { id: number; fts_rank: number }
+  >;
+
+  // 2. Vec search only when available
+  if (kbVecAvailable) {
+    try {
+      const embedding = await getQueryEmbedding(query);
+      if (embedding) {
+        const vecRows = db
+          .prepare(
+            `SELECT v.rowid as id, v.distance,
+                    a.url, a.title, a.summary, a.type, a.platform, a.language,
+                    a.summary_l1, a.summary_l2, a.para_type, a.para_area
+             FROM vec_articles v
+             JOIN articles a ON a.id = v.rowid
+             WHERE v.embedding MATCH ? AND k = ?
+               AND NOT (a.para_type = 'archive' AND a.para_area = 'Build Artifacts')
+             ORDER BY v.distance`,
+          )
+          .all(new Float32Array(embedding.buffer), safeLimit * 2) as Array<
+          Record<string, unknown> & { id: number; distance: number }
+        >;
+
+        // Normalize FTS BM25 ranks (negative; more negative = better)
+        const ftsRanks = ftsRows.map((r) => r.fts_rank);
+        const minRank = Math.min(...ftsRanks, 0);
+        const maxRank = Math.max(...ftsRanks, -1);
+        const rankRange = minRank - maxRank || 1;
+
+        // Merge by article ID with 60/40 weighting (vec=60%, fts=40%)
+        const merged = new Map<number, Record<string, unknown>>();
+
+        for (const r of ftsRows) {
+          const normFts = (r.fts_rank - maxRank) / rankRange; // [0,1], higher = better
+          const { fts_rank: _fts_rank, ...rest } = r;
+          merged.set(r.id, { ...rest, _score: 0.4 * normFts });
+        }
+        for (const r of vecRows) {
+          const vecSim = Math.max(0, 1 - r.distance);
+          const { distance: _distance, ...rest } = r;
+          if (merged.has(r.id)) {
+            const existing = merged.get(r.id)!;
+            existing._score = (existing._score as number) + 0.6 * vecSim;
+          } else {
+            merged.set(r.id, { ...rest, _score: 0.6 * vecSim });
+          }
+        }
+
+        const hybridResults = Array.from(merged.values())
+          .toSorted((a, b) => (b._score as number) - (a._score as number))
+          .slice(0, safeLimit)
+          .map(({ _score, ...rest }) => rest);
+
+        return hybridResults;
+      }
+    } catch {
+      // Vec failed — fall through to FTS-only
+    }
+  }
+
+  // 3. FTS-only fallback
+  return ftsRows.slice(0, safeLimit).map(({ fts_rank: _fts_rank, ...rest }) => rest);
 }
 
 function kbGetArticle(id: number) {
@@ -875,7 +943,7 @@ function kbCommunities(communityId: number | undefined, limit: number) {
  * Returns formatted markdown of top FTS5 results (title + L2 summary + tags).
  * Designed for pre-reply system prompt injection — fast, read-only, never throws.
  */
-export function queryKbForContext(query: string, limit = 5): string {
+export async function queryKbForContext(query: string, limit = 5): Promise<string> {
   try {
     const db = getKbDb();
     const safeLimit = Math.max(1, Math.min(limit, 10));
@@ -884,9 +952,18 @@ export function queryKbForContext(query: string, limit = 5): string {
       return "";
     }
 
-    const rows = db
+    type KbContextRow = {
+      id: number;
+      title: string;
+      summary_l2: string | null;
+      tags: string | null;
+      fts_rank?: number;
+    };
+
+    // FTS5 always runs first (sync, reliable)
+    const ftsRows = db
       .prepare(
-        `SELECT a.id, a.title, a.summary_l2, a.tags
+        `SELECT a.id, a.title, a.summary_l2, a.tags, fts.rank as fts_rank
          FROM articles_fts fts
          JOIN articles a ON a.id = fts.rowid
          WHERE articles_fts MATCH ?
@@ -894,13 +971,80 @@ export function queryKbForContext(query: string, limit = 5): string {
          ORDER BY rank
          LIMIT ?`,
       )
-      .all(safeQuery, safeLimit) as Array<{
-      id: number;
-      title: string;
-      summary_l2: string | null;
-      tags: string | null;
-    }>;
+      .all(safeQuery, safeLimit * 2) as Array<KbContextRow & { fts_rank: number }>;
 
+    // Vec search only when available
+    if (kbVecAvailable) {
+      try {
+        const embedding = await getQueryEmbedding(query);
+        if (embedding) {
+          const vecRows = db
+            .prepare(
+              `SELECT v.rowid as id, v.distance, a.title, a.summary_l2, a.tags
+               FROM vec_articles v
+               JOIN articles a ON a.id = v.rowid
+               WHERE v.embedding MATCH ? AND k = ?
+                 AND NOT (a.para_type = 'archive' AND a.para_area = 'Build Artifacts')
+               ORDER BY v.distance`,
+            )
+            .all(new Float32Array(embedding.buffer), safeLimit * 2) as Array<
+            KbContextRow & { distance: number }
+          >;
+
+          // Normalize FTS BM25 ranks (negative; more negative = better)
+          const ftsRanks = ftsRows.map((r) => r.fts_rank);
+          const minRank = Math.min(...ftsRanks, 0);
+          const maxRank = Math.max(...ftsRanks, -1);
+          const rankRange = minRank - maxRank || 1;
+
+          // Merge by article ID with 60/40 weighting (vec=60%, fts=40%)
+          const merged = new Map<number, KbContextRow & { _score: number }>();
+
+          for (const r of ftsRows) {
+            const normFts = (r.fts_rank - maxRank) / rankRange;
+            merged.set(r.id, {
+              id: r.id,
+              title: r.title,
+              summary_l2: r.summary_l2,
+              tags: r.tags,
+              _score: 0.4 * normFts,
+            });
+          }
+          for (const r of vecRows) {
+            const vecSim = Math.max(0, 1 - r.distance);
+            if (merged.has(r.id)) {
+              merged.get(r.id)!._score += 0.6 * vecSim;
+            } else {
+              merged.set(r.id, {
+                id: r.id,
+                title: r.title,
+                summary_l2: r.summary_l2,
+                tags: r.tags,
+                _score: 0.6 * vecSim,
+              });
+            }
+          }
+
+          const hybridRows = Array.from(merged.values())
+            .toSorted((a, b) => b._score - a._score)
+            .slice(0, safeLimit);
+
+          if (hybridRows.length > 0) {
+            const lines = hybridRows.map((r) => {
+              const summary = (r.summary_l2 ?? "").slice(0, 500);
+              const tags = r.tags ? ` [${r.tags}]` : "";
+              return `- **${r.title}**${tags}\n  ${summary}`;
+            });
+            return lines.join("\n");
+          }
+        }
+      } catch {
+        // Vec failed — fall through to FTS-only
+      }
+    }
+
+    // FTS-only fallback
+    const rows = ftsRows.slice(0, safeLimit);
     if (!rows || rows.length === 0) {
       return "";
     }

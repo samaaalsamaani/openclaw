@@ -268,7 +268,7 @@ export async function runPreparedReply(
   const bodyForKb = (sessionCtx.BodyStripped ?? sessionCtx.Body ?? "").trim();
   if (bodyForKb.length >= 10 && !bodyForKb.startsWith("/")) {
     try {
-      const kbResult = queryKbForContext(bodyForKb, 5);
+      const kbResult = await queryKbForContext(bodyForKb, 5);
       if (kbResult) {
         kbContextSection = `--- RELEVANT KB CONTEXT ---\n${kbResult}`;
       }
