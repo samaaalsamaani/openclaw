@@ -17,6 +17,7 @@ import {
   updateSessionStore,
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
+import { queryGraphContext } from "../../hooks/bundled/graph-context/handler.js";
 import { clearCommandLane, getQueueSize } from "../../process/command-queue.js";
 import { normalizeMainKey } from "../../routing/session-key.js";
 import { isReasoningTagProvider } from "../../utils/provider-utils.js";
@@ -288,6 +289,15 @@ export async function runPreparedReply(
   }
   const crossChannelContextSection = crossChannelContextResult.section;
 
+  // Graph intelligence: inject Memgraph entity/decision context into system prompt
+  let graphContextSection = "";
+  if (bodyForKb.length >= 10 && !bodyForKb.startsWith("/")) {
+    graphContextSection = await Promise.race([
+      queryGraphContext(bodyForKb),
+      new Promise<string>((resolve) => setTimeout(() => resolve(""), 3000)),
+    ]);
+  }
+
   const extraSystemPrompt = [
     inboundMetaPrompt,
     groupChatContext,
@@ -295,6 +305,7 @@ export async function runPreparedReply(
     groupSystemPrompt,
     kbContextSection,
     crossChannelContextSection,
+    graphContextSection,
   ]
     .filter(Boolean)
     .join("\n\n");
