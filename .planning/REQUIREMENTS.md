@@ -67,6 +67,14 @@
 - [ ] **DEV-04**: Gateway web control panel shows an initial marketplace UI with 5+ featured plugins
 - [ ] **DEV-05**: Developer-facing analytics show install count and active user count per plugin
 
+### DB Knowledge Leverage
+
+- [ ] **LEVER-01**: `kbQuery()` and `queryKbForContext()` use hybrid vector+FTS search (60% semantic / 40% FTS) when embedding server is available; fall back to FTS-only gracefully
+- [ ] **LEVER-02**: Every inbound message ≥10 chars triggers a Memgraph entity lookup; matched causal/episodic graph context is injected into the agent system prompt (latency-bounded at 3s)
+- [ ] **LEVER-03**: `graph-intelligence` MCP server (6 tools: graph_query, graph_context, graph_causality, graph_timeline, graph_entity, graph_learn) is available in all agent sessions via `buildSdkMcpServers()`
+- [ ] **LEVER-04**: `graph_trace` tool in KB MCP server traverses `CAUSED_BY` / `LED_TO` / `SUPPORTS` edges to answer root-cause and consequence questions
+- [ ] **LEVER-05**: All existing tests pass; `pnpm tsgo` has zero errors; gateway restarts cleanly with graph-context hook and graph-intelligence MCP active
+
 ---
 
 ## v5.0 Requirements (Horizon 2 — Developer Platform)
@@ -151,11 +159,16 @@ Deferred. Tracked but not in current roadmap.
 | DEV-03      | Phase 28 | Pending  |
 | DEV-04      | Phase 28 | Pending  |
 | DEV-05      | Phase 28 | Pending  |
+| LEVER-01    | Phase 29 | Pending  |
+| LEVER-02    | Phase 29 | Pending  |
+| LEVER-03    | Phase 29 | Pending  |
+| LEVER-04    | Phase 29 | Pending  |
+| LEVER-05    | Phase 29 | Pending  |
 
 **Coverage:**
 
-- v4.0 requirements: 37 total
-- Mapped to phases: 37
+- v4.0 requirements: 42 total
+- Mapped to phases: 42
 - Unmapped: 0 ✓
 
 ---

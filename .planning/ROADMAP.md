@@ -67,6 +67,7 @@ See: `.planning/milestones/v3.0-ROADMAP.md` for full phase details
 - [ ] **Phase 26: consumer-billing** — Stripe integration, 3-tier model (Free / Personal $12-15/mo / Power $25-30/mo), billing portal, subscription management, tier enforcement at runtime. Monetization infrastructure and value signal.
 - [ ] **Phase 27: macos-app-polish** — Connection setup flow, status indicators, quick-message UI, notification handling, channel health view. The highest-visibility surface for word-of-mouth among power users who generate tech community spread.
 - [ ] **Phase 28: developer-platform-groundwork** — Plugin SDK on npm with versioning, developer documentation site, plugin submission flow, initial marketplace UI in web control panel. Lays the Horizon 2 flywheel foundation while building in Horizon 1.
+- [ ] **Phase 29: db-knowledge-leverage** — Activate the full vector + graph stack so every agent response draws on semantic search, causal graph context, and episodic memory. Upgrades KB to hybrid vector+FTS, wires Memgraph into Auto-RAG and agent sessions, and adds `graph_trace` tool for causal chain traversal. Turns three underutilised databases into compounding intelligence.
 
 ## Phase Details
 
@@ -221,6 +222,28 @@ Plans:
 
 ---
 
+### Phase 29: db-knowledge-leverage
+
+**Goal**: Every agent response draws on hybrid vector+FTS semantic search, Memgraph causal/episodic context, and on-demand graph traversal tools — not just keyword FTS. The three existing databases (KB SQLite+vec, Memgraph, Observability) become active intelligence layers.
+**Depends on**: Phase 23
+**Requirements**: LEVER-01, LEVER-02, LEVER-03, LEVER-04, LEVER-05
+**Source**: `docs/plans/2026-03-04-db-knowledge-leverage.md`
+**Success Criteria** (what must be TRUE):
+
+1. `kbQuery()` and `queryKbForContext()` use hybrid vector+FTS (60/40 weights) when embedding server is available, falling back to FTS-only gracefully
+2. Every inbound message with ≥10 chars triggers a Memgraph entity lookup; matched graph context appears in the agent's system prompt
+3. The `graph-intelligence` MCP server (6 tools) is available to all agent sessions via `buildSdkMcpServers()`
+4. A `graph_trace` tool in the KB MCP server answers causal chain questions (what caused X, what followed from X)
+5. All existing tests pass; `pnpm tsgo` has zero errors; gateway restarts cleanly with all new hooks active
+
+Plans:
+
+- [ ] 29-01: Hybrid KB search — upgrade kbQuery + queryKbForContext to vector+FTS
+- [ ] 29-02: Graph context hook — message:received hook injects Memgraph entity context into Auto-RAG
+- [ ] 29-03: Graph MCP wiring + graph_trace tool — wire graph MCP to sessions, add causal trace tool
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans       | Status   | Completed  |
@@ -237,3 +260,4 @@ Plans:
 | 26    | v4.0      | TBD         | Pending  | —          |
 | 27    | v4.0      | TBD         | Pending  | —          |
 | 28    | v4.0      | TBD         | Pending  | —          |
+| 29    | v4.0      | TBD         | Pending  | —          |
