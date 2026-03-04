@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: — Consumer Foundation
 status: unknown
-stopped_at: Completed 29-01-PLAN.md
-last_updated: "2026-03-04T19:13:05.999Z"
+stopped_at: Completed 29-02-PLAN.md
+last_updated: "2026-03-04T22:28:21.000Z"
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Phase 23 COMPLETE** (23-01: cross-channel memory indexer, 23-02: cross-channel context injection, 23-03: attribution footer).
 
-**Phase 29 IN PROGRESS** — 29-01 complete (hybrid KB search). Resume with 29-02.
+**Phase 29 IN PROGRESS** — 29-01 complete (hybrid KB search), 29-02 complete (graph-context hook + system prompt injection). Resume with 29-03.
 
-Resume with Phase 29-02 (db-knowledge-leverage plan 02).
+Resume with Phase 29-03 (db-knowledge-leverage plan 03).
 
 ## Phase Map
 
@@ -76,6 +76,10 @@ Resume with Phase 29-02 (db-knowledge-leverage plan 02).
 - kbQuery() and queryKbForContext() both upgraded to async for hybrid vec+FTS search (60/40 weighting) — graceful FTS-only fallback when sqlite-vec unavailable (29-01)
 - Hybrid merge: FTS BM25 rank normalized to [0,1], vec distance converted to similarity, merged by article ID (29-01)
 - neo4j-driver ^6.0.1 installed at workspace root (required by Plan 02) (29-01)
+- queryGraphContext() dynamic-imports neo4j-driver to prevent test env failures — Memgraph unreachable returns "" silently (29-02)
+- neo4j.auth.basic("","") used for Memgraph no-auth mode — auth.none() removed in neo4j-driver v6 (29-02)
+- Graph context 3s Promise.race timeout (vs 400ms for cross-channel) — graph traversal is more expensive (29-02)
+- Bundled hook fires for extensibility; primary injection via direct queryGraphContext() call in get-reply-run.ts (29-02)
 
 ### Known Technical Debt (carried from v3.0)
 
@@ -110,6 +114,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-04T19:13:05.997Z
-Stopped at: Completed 29-01-PLAN.md
-Next: Phase 24 — connect-everything-onboarding.
+Last session: 2026-03-04T22:28:21.000Z
+Stopped at: Completed 29-02-PLAN.md
+Next: Phase 29-03 — db-knowledge-leverage plan 03.

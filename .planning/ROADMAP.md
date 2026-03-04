@@ -228,7 +228,7 @@ Plans:
 **Depends on**: Phase 23
 **Requirements**: LEVER-01, LEVER-02, LEVER-03, LEVER-04, LEVER-05
 **Source**: `docs/plans/2026-03-04-db-knowledge-leverage.md`
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 **Success Criteria** (what must be TRUE):
 
 1. `kbQuery()` and `queryKbForContext()` use hybrid vector+FTS (60/40 weights) when embedding server is available, falling back to FTS-only gracefully
@@ -261,4 +261,4 @@ Plans:
 | 26    | v4.0      | TBD         | Pending     | —          |
 | 27    | v4.0      | TBD         | Pending     | —          |
 | 28    | v4.0      | TBD         | Pending     | —          |
-| 29    | 1/3       | In Progress |             | —          |
+| 29    | 2/3       | In Progress |             | —          |
