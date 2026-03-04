@@ -145,4 +145,47 @@ describe("mcp-servers module", () => {
       expect(errorBoundaryMatches!.length).toBeGreaterThanOrEqual(12);
     });
   });
+
+  describe("graph-intelligence MCP entry", () => {
+    it("includes graph-intelligence key when graph mcp-server.js exists", async () => {
+      // Verify that graph MCP file exists on this machine; if not, skip behavioral test
+      const fs = await import("node:fs");
+      const os = await import("node:os");
+      const path = await import("node:path");
+      const graphMcpPath = path.join(
+        os.homedir(),
+        ".openclaw",
+        "projects",
+        "graph",
+        "mcp-server.js",
+      );
+
+      if (!fs.existsSync(graphMcpPath)) {
+        // File not present — source guard test below covers the code path
+        return;
+      }
+
+      const mcpServers = await import("./mcp-servers.js");
+      const servers = await mcpServers.buildSdkMcpServers();
+
+      // When graph file exists, entry must be present
+      expect(Object.keys(servers ?? {})).toContain("graph-intelligence");
+      const entry = (servers ?? {})["graph-intelligence"] as { type: string; command: string };
+      expect(entry.type).toBe("stdio");
+      expect(entry.command).toBe(process.execPath);
+    });
+
+    it("graph-intelligence source contains fs.existsSync guard", async () => {
+      const code = await import("node:fs").then((fs) =>
+        fs.promises.readFile(
+          new URL("./mcp-servers.js", import.meta.url).pathname.replace(".js", ".ts"),
+          "utf-8",
+        ),
+      );
+
+      expect(code).toContain("graph-intelligence");
+      expect(code).toContain("graphMcpPath");
+      expect(code).toContain("existsSync");
+    });
+  });
 });

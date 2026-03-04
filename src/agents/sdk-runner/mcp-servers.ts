@@ -437,6 +437,24 @@ export async function buildSdkMcpServers(): Promise<Record<string, McpServerConf
       args: ["-y", "@modelcontextprotocol/server-sequential-thinking"],
     };
 
+    // Graph Intelligence — external stdio MCP server (PAIOS-specific)
+    // fs.existsSync guard: graph project is not part of openclaw install
+    {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const path = require("node:path") as typeof import("node:path");
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fs = require("node:fs") as typeof import("node:fs");
+      const graphMcpPath = path.join(home, ".openclaw", "projects", "graph", "mcp-server.js");
+      if (fs.existsSync(graphMcpPath)) {
+        servers["graph-intelligence"] = {
+          type: "stdio" as const,
+          command: process.execPath,
+          args: [graphMcpPath],
+          env: { ...process.env, HOME: home },
+        };
+      }
+    }
+
     log.info(`created ${Object.keys(servers).length} MCP servers (in-process + external)`);
     return servers;
   } catch (err) {
