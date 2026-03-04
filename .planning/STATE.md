@@ -1,14 +1,15 @@
 ---
 gsd_state_version: 1.0
 milestone: v4.0
-milestone_name: Consumer Foundation
-status: in-progress
-last_updated: "2026-03-02T16:00:00Z"
+milestone_name: — Consumer Foundation
+status: unknown
+stopped_at: Completed 29-01-PLAN.md
+last_updated: "2026-03-04T19:13:05.999Z"
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 2
-  total_plans: 0
-  completed_plans: 5
+  total_plans: 9
+  completed_plans: 7
 ---
 
 # Project State
@@ -25,7 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Phase 23 COMPLETE** (23-01: cross-channel memory indexer, 23-02: cross-channel context injection, 23-03: attribution footer).
 
-Resume with Phase 24 (connect-everything-onboarding).
+**Phase 29 IN PROGRESS** — 29-01 complete (hybrid KB search). Resume with 29-02.
+
+Resume with Phase 29-02 (db-knowledge-leverage plan 02).
 
 ## Phase Map
 
@@ -70,6 +73,9 @@ Resume with Phase 24 (connect-everything-onboarding).
 - Extension peerDependencies use real semver range `>=2026.1.26` (not workspace:\*) for npm compatibility (22-02)
 - better-sqlite3 is already in root dependencies (not devDependencies) — CONCERNS.md stale entry resolved (22-02)
 - OBS-07 health dashboard unblocked — tsdown external: ["better-sqlite3"] already correct (22-02)
+- kbQuery() and queryKbForContext() both upgraded to async for hybrid vec+FTS search (60/40 weighting) — graceful FTS-only fallback when sqlite-vec unavailable (29-01)
+- Hybrid merge: FTS BM25 rank normalized to [0,1], vec distance converted to similarity, merged by article ID (29-01)
+- neo4j-driver ^6.0.1 installed at workspace root (required by Plan 02) (29-01)
 
 ### Known Technical Debt (carried from v3.0)
 
@@ -104,6 +110,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-02T16:00:00Z
-Stopped at: Completed Phase 23 in full — 23-01 (indexer), 23-02 (context injection), 23-03 (attribution footer). Post-review fixes applied: FTS5 sanitization, setInterval unref, schema flag, isError guard.
+Last session: 2026-03-04T19:13:05.997Z
+Stopped at: Completed 29-01-PLAN.md
 Next: Phase 24 — connect-everything-onboarding.
