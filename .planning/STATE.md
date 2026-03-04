@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: — Consumer Foundation
 status: unknown
-stopped_at: Completed 29-02-PLAN.md
-last_updated: "2026-03-04T22:28:21.000Z"
+stopped_at: Completed 29-03-PLAN.md
+last_updated: "2026-03-04T23:21:00.000Z"
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Phase 23 COMPLETE** (23-01: cross-channel memory indexer, 23-02: cross-channel context injection, 23-03: attribution footer).
 
-**Phase 29 IN PROGRESS** — 29-01 complete (hybrid KB search), 29-02 complete (graph-context hook + system prompt injection). Resume with 29-03.
+**Phase 29 COMPLETE** — 29-01 (hybrid KB search), 29-02 (graph-context hook + system prompt injection), 29-03 (graph-intelligence MCP wiring + graph_trace causal traversal tool).
 
-Resume with Phase 29-03 (db-knowledge-leverage plan 03).
+Phase 29 db-knowledge-leverage fully complete.
 
 ## Phase Map
 
@@ -80,6 +80,9 @@ Resume with Phase 29-03 (db-knowledge-leverage plan 03).
 - neo4j.auth.basic("","") used for Memgraph no-auth mode — auth.none() removed in neo4j-driver v6 (29-02)
 - Graph context 3s Promise.race timeout (vs 400ms for cross-channel) — graph traversal is more expensive (29-02)
 - Bundled hook fires for extensibility; primary injection via direct queryGraphContext() call in get-reply-run.ts (29-02)
+- graph-intelligence MCP entry uses process.execPath (not npx) with fs.existsSync guard — external PAIOS-specific stdio MCP for direct Memgraph access (29-03)
+- graph_trace tool traverses CAUSED_BY/LED_TO/SUPPORTS edges in Memgraph with direction (causes/effects/both) and hops (1-5) params (29-03)
+- HOME env var passed explicitly to graph-intelligence stdio subprocess — resolveRequiredHomeDir() used for consistency (29-03)
 
 ### Known Technical Debt (carried from v3.0)
 
@@ -114,6 +117,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-04T22:28:21.000Z
-Stopped at: Completed 29-02-PLAN.md
-Next: Phase 29-03 — db-knowledge-leverage plan 03.
+Last session: 2026-03-04T23:21:00.000Z
+Stopped at: Completed 29-03-PLAN.md
+Next: Phase 29 complete. Next phase TBD.
