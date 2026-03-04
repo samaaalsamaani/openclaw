@@ -118,6 +118,14 @@ None - no external service configuration required.
 - `crossChannelContextResult.sources` provides `{ channel: string; mtimeMs: number }[]` for footer generation
 - Cross-channel context will be injected into every non-slash, non-short-query reply that has relevant other-channel history
 
+## Self-Check: PASSED
+
+- FOUND: src/auto-reply/reply/cross-channel-context.ts
+- FOUND: src/auto-reply/reply/cross-channel-context.test.ts
+- FOUND: .planning/phases/23-cross-channel-memory/23-02-SUMMARY.md
+- FOUND: commit 9aadb9caa (Task 1)
+- FOUND: commit ddff93f83 (Task 2)
+
 ---
 
 _Phase: 23-cross-channel-memory_
