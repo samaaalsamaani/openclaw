@@ -228,6 +228,7 @@ Plans:
 **Depends on**: Phase 23
 **Requirements**: LEVER-01, LEVER-02, LEVER-03, LEVER-04, LEVER-05
 **Source**: `docs/plans/2026-03-04-db-knowledge-leverage.md`
+**Plans:** 3 plans
 **Success Criteria** (what must be TRUE):
 
 1. `kbQuery()` and `queryKbForContext()` use hybrid vector+FTS (60/40 weights) when embedding server is available, falling back to FTS-only gracefully
@@ -238,26 +239,26 @@ Plans:
 
 Plans:
 
-- [ ] 29-01: Hybrid KB search — upgrade kbQuery + queryKbForContext to vector+FTS
-- [ ] 29-02: Graph context hook — message:received hook injects Memgraph entity context into Auto-RAG
-- [ ] 29-03: Graph MCP wiring + graph_trace tool — wire graph MCP to sessions, add causal trace tool
+- [ ] 29-01-PLAN.md — Hybrid KB search: upgrade kbQuery + queryKbForContext to async vector+FTS with 60/40 weighting, install neo4j-driver
+- [ ] 29-02-PLAN.md — Graph context hook: create graph-context bundled hook + inject queryGraphContext into get-reply-run.ts extraSystemPrompt
+- [ ] 29-03-PLAN.md — Graph MCP wiring + graph_trace: wire graph-intelligence stdio MCP into buildSdkMcpServers(), add graph_trace to KB MCP server
 
 ---
 
 ## Progress
 
-| Phase | Milestone | Plans       | Status   | Completed  |
-| ----- | --------- | ----------- | -------- | ---------- |
-| 1–9   | v1.0      | 29/29       | Complete | 2026-02-22 |
-| 10–15 | v2.0      | 17/17       | Complete | 2026-02-22 |
-| 16–19 | v3.0      | 13/13       | Complete | 2026-02-28 |
-| 20    | v3.0      | 0/3         | Deferred | —          |
-| 21    | v3.0      | ~2/3        | Partial  | 2026-03-01 |
-| 22    | 1/3       | In Progress |          | —          |
-| 23    | 2/3       | In Progress |          | —          |
-| 24    | v4.0      | TBD         | Pending  | —          |
-| 25    | v4.0      | TBD         | Pending  | —          |
-| 26    | v4.0      | TBD         | Pending  | —          |
-| 27    | v4.0      | TBD         | Pending  | —          |
-| 28    | v4.0      | TBD         | Pending  | —          |
-| 29    | v4.0      | TBD         | Pending  | —          |
+| Phase | Milestone | Plans | Status      | Completed  |
+| ----- | --------- | ----- | ----------- | ---------- |
+| 1–9   | v1.0      | 29/29 | Complete    | 2026-02-22 |
+| 10–15 | v2.0      | 17/17 | Complete    | 2026-02-22 |
+| 16–19 | v3.0      | 13/13 | Complete    | 2026-02-28 |
+| 20    | v3.0      | 0/3   | Deferred    | —          |
+| 21    | v3.0      | ~2/3  | Partial     | 2026-03-01 |
+| 22    | v4.0      | 1/3   | In Progress | —          |
+| 23    | v4.0      | 2/3   | In Progress | —          |
+| 24    | v4.0      | TBD   | Pending     | —          |
+| 25    | v4.0      | TBD   | Pending     | —          |
+| 26    | v4.0      | TBD   | Pending     | —          |
+| 27    | v4.0      | TBD   | Pending     | —          |
+| 28    | v4.0      | TBD   | Pending     | —          |
+| 29    | v4.0      | 0/3   | Pending     | —          |
