@@ -6,6 +6,7 @@
     "research": true,
     "plan_checker": true,
     "verifier": true,
-    "auto_advance": true
+    "auto_advance": true,
+    "_auto_chain_active": false
   }
 }
