@@ -68,13 +68,13 @@ skipped: 0
 
 - truth: "graph_trace tool traverses CAUSED_BY/LED_TO/SUPPORTS edges and returns causal chain from Memgraph"
   status: failed
-  reason: "User reported: agent says there's no graph_trace tool — cannot invoke it"
-  severity: major
+  reason: "graph_trace is in KB MCP server (SDK-only, not available to gateway agent). auth.none() bug fixed in mcp-server.js line 760. Tool untested end-to-end — requires Claude Code session to verify."
+  severity: minor
   test: 6
-  root_cause: "~/.openclaw/projects/knowledge-base/mcp-server.js line 767 uses neo4j.auth.none() which was removed in neo4j-driver v6. Tool throws on every call. Same bug was fixed in handler.ts (29-02) but not propagated to KB MCP server."
+  root_cause: "KB MCP server only mounts for SDK agents (Claude Code/Codex/Gemini), not the gateway. Separately: auth.none() bug was fixed (now auth.basic). Tool code is correct but needs Claude Code session to confirm end-to-end."
   artifacts:
   - path: "~/.openclaw/projects/knowledge-base/mcp-server.js"
-    issue: "neo4j.auth.none() on line 767 — must be neo4j.auth.basic('','')"
+    issue: "auth.none() fixed. Tool untested in live Claude Code session."
     missing:
-  - "Change neo4j.auth.none() to neo4j.auth.basic('','') in graph_trace handler"
+  - "Verify graph_trace works in a Claude Code agent session"
     debug_session: ""
